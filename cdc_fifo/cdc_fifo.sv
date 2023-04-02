@@ -27,6 +27,7 @@ module cdc_fifo #(
     // address and data defines. mem at the end
     address_t mem_write_address, mem_read_address;
     data_t    mem_write_data,    mem_read_data;
+    logic     mem_read_address_valid, mem_read_data_valid;
     logic     mem_write_enable;
 
     // write 
@@ -67,16 +68,17 @@ module cdc_fifo #(
     logic read_ready;
     always_comb begin
         // if the extended pointers are equal the FIFO is empty, else just/ read
-        read_ready       = (read_p != write_p_cdc);
-        read_p_next      =  read_p + {{address_width{1'b0}}, 1'b1};
+        read_ready             = (read_p != write_p_cdc);
+        read_p_next            =  read_p + {{address_width{1'b0}}, 1'b1};
         
-        mem_read_data    = mem_read_data;
-        mem_read_address = read_p[address_width-1:0];
+        mem_read_address       = read_p[address_width-1:0];
+        mem_read_address_valid = read_ready;
+
+        read_data              = mem_read_data;
+        read_valid             = mem_read_data_valid;
     end
 
     always @(posedge read_clk) begin
-        // delay ready to match data
-        read_valid <= read_ready;
         // if data is acked move the pointer. ACK is sampled same point as
         // ACK is sampled at the same edge VALID is set, you are expected to
         // know before the valid cycle whether you will consume data and
@@ -154,7 +156,8 @@ module cdc_fifo #(
     end
 
     always @(posedge read_clk) begin
-        mem_read_data <= mem[mem_read_address];
+        mem_read_data       <= mem[mem_read_address];
+        mem_read_data_valid <= mem_read_address_valid;
     end
 
 endmodule
