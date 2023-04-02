@@ -26,9 +26,6 @@ module cdc_fifo #(
     // infer a simple dual port memory with async clocks
     // address and data defines. mem at the end
     address_t mem_write_address, mem_read_address;
-    data_t    mem_write_data,    mem_read_data;
-    logic     mem_read_address_valid, mem_read_data_valid;
-    logic     mem_write_enable;
 
     // write 
     pointer_t 
@@ -52,16 +49,17 @@ module cdc_fifo #(
         // address are equal but the high bit is different, the fifo is full
         write_ready       = ( write_p != {~read_p_cdc[address_width], read_p_cdc[address_width-1:0]} );
         write_p_next      =   write_p + {{address_width{1'b0}}, 1'b1};
-
-        mem_write_data    =   write_data;
-        mem_write_enable  =   write_ready && write_valid;
         mem_write_address =   write_p[address_width-1:0];
     end
 
+    // infer the memory
+    data_t mem[num_entries];
+
     always @(posedge write_clk) begin
         // increment the address on write
-        if(mem_write_enable) begin
-            write_p <= write_p_next;
+        if(write_ready && write_valid) begin
+            mem[mem_write_address] <= write_data;
+            write_p                <= write_p_next;
         end
     end
 
@@ -70,12 +68,6 @@ module cdc_fifo #(
         // if the extended pointers are equal the FIFO is empty, else just/ read
         read_ready             = (read_p != write_p_cdc);
         read_p_next            =  read_p + {{address_width{1'b0}}, 1'b1};
-        
-        mem_read_address       = read_p[address_width-1:0];
-        mem_read_address_valid = read_ready;
-
-        read_data              = mem_read_data;
-        read_valid             = mem_read_data_valid;
     end
 
     always @(posedge read_clk) begin
@@ -87,6 +79,8 @@ module cdc_fifo #(
         if(read_ready && read_ack) begin
             read_p <= read_p_next;
         end
+        read_data <= mem[mem_read_address];
+        read_valid <= read_ready;;
     end
 
     // gray encode the write pointer, pass it over the cdc and unencode it/ again
@@ -147,18 +141,6 @@ module cdc_fifo #(
         .int_out    (read_p_cdc)
     );
 
-    // infer the memory
-    data_t mem[num_entries];
-    always @(posedge write_clk) begin
-        if(mem_write_enable) begin
-            mem[mem_write_address] <= mem_write_data;
-        end
-    end
-
-    always @(posedge read_clk) begin
-        mem_read_data       <= mem[mem_read_address];
-        mem_read_data_valid <= mem_read_address_valid;
-    end
 
 endmodule
 
