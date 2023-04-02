@@ -68,6 +68,7 @@ module cdc_fifo #(
         // if the extended pointers are equal the FIFO is empty, else just/ read
         read_ready             = (read_p != write_p_cdc);
         read_p_next            =  read_p + {{address_width{1'b0}}, 1'b1};
+        mem_read_address       = read_p[address_width-1:0];
     end
 
     always @(posedge read_clk) begin
