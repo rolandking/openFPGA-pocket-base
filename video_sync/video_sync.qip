@@ -1,0 +1,2 @@
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "video_sync.sv"]
+set_global_assignment -name QIP_FILE [file join $::quartus(qip_path) "../pocket_pkg/pocket_pkg.qip"]
