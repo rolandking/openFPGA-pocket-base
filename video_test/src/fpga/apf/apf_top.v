@@ -41,7 +41,202 @@
 
 `default_nettype none
 
-	wire    [23:0]  video_rgb;
+module apf_top (
+///////////////////////////////////////////////////
+// clock inputs 74.25mhz. not phase aligned, so treat these domains as asynchronous
+
+input   wire            clk_74a, // mainclk1
+input   wire            clk_74b, // mainclk1 
+
+///////////////////////////////////////////////////
+// cartridge interface
+// switches between 3.3v and 5v mechanically
+// output enable for multibit translators controlled by PIC32
+
+// GBA AD[15:8]
+inout   wire    [7:0]   cart_tran_bank2,
+output  wire            cart_tran_bank2_dir,
+
+// GBA AD[7:0]
+inout   wire    [7:0]   cart_tran_bank3,
+output  wire            cart_tran_bank3_dir,
+
+// GBA A[23:16]
+inout   wire    [7:0]   cart_tran_bank1,
+output  wire            cart_tran_bank1_dir,
+
+// GBA [7] PHI#
+// GBA [6] WR#
+// GBA [5] RD#
+// GBA [4] CS1#/CS#
+//     [3:0] unwired
+inout   wire    [7:4]   cart_tran_bank0,
+output  wire            cart_tran_bank0_dir,
+
+// GBA CS2#/RES#
+inout   wire            cart_tran_pin30,
+output  wire            cart_tran_pin30_dir,
+// when GBC cart is inserted, this signal when low or weak will pull GBC /RES low with a special circuit
+// the goal is that when unconfigured, the FPGA weak pullups won't interfere.
+// thus, if GBC cart is inserted, FPGA must drive this high in order to let the level translators
+// and general IO drive this pin.
+output  wire            cart_pin30_pwroff_reset,
+
+// GBA IRQ/DRQ
+inout   wire            cart_tran_pin31,
+output  wire            cart_tran_pin31_dir,
+
+// infrared
+// avoid driving the TX LED with DC or leaving it stuck on. pulsed usage is fine
+input   wire            port_ir_rx,
+output  wire            port_ir_tx,
+output  wire            port_ir_rx_disable,
+
+// GBA link port
+inout   wire            port_tran_si,
+output  wire            port_tran_si_dir,
+inout   wire            port_tran_so,
+output  wire            port_tran_so_dir,
+inout   wire            port_tran_sck,
+output  wire            port_tran_sck_dir,
+inout   wire            port_tran_sd,
+output  wire            port_tran_sd_dir,
+ 
+///////////////////////////////////////////////////
+// video output to the scaler
+
+inout   wire    [11:0]  scal_vid,
+inout   wire            scal_clk,
+inout   wire            scal_de,
+inout   wire            scal_skip,
+inout   wire            scal_vs,
+inout   wire            scal_hs,
+
+output  wire            scal_audmclk,
+input   wire            scal_audadc,
+output  wire            scal_auddac,
+output  wire            scal_audlrck,
+
+///////////////////////////////////////////////////
+// communication between main and scaler (aristotle) fpga. 
+// spi bus with aristotle as controller. 
+
+inout   wire            bridge_spimosi,
+inout   wire            bridge_spimiso,
+inout   wire            bridge_spiclk,
+input   wire            bridge_spiss,
+inout   wire            bridge_1wire,
+
+///////////////////////////////////////////////////
+// cellular psram 0 and 1, two chips (64mbit x2 dual die per chip)
+
+output  wire    [21:16] cram0_a,
+inout   wire    [15:0]  cram0_dq,
+input   wire            cram0_wait,
+output  wire            cram0_clk,
+output  wire            cram0_adv_n,
+output  wire            cram0_cre,
+output  wire            cram0_ce0_n,
+output  wire            cram0_ce1_n,
+output  wire            cram0_oe_n,
+output  wire            cram0_we_n,
+output  wire            cram0_ub_n,
+output  wire            cram0_lb_n,
+
+output  wire    [21:16] cram1_a,
+inout   wire    [15:0]  cram1_dq,
+input   wire            cram1_wait,
+output  wire            cram1_clk,
+output  wire            cram1_adv_n,
+output  wire            cram1_cre,
+output  wire            cram1_ce0_n,
+output  wire            cram1_ce1_n,
+output  wire            cram1_oe_n,
+output  wire            cram1_we_n,
+output  wire            cram1_ub_n,
+output  wire            cram1_lb_n,
+
+///////////////////////////////////////////////////
+// sdram, 512mbit x16
+
+output  wire    [12:0]  dram_a,
+output  wire    [1:0]   dram_ba,
+inout   wire    [15:0]  dram_dq,
+output  wire    [1:0]   dram_dqm,
+output  wire            dram_clk,
+output  wire            dram_cke,
+output  wire            dram_ras_n,
+output  wire            dram_cas_n,
+output  wire            dram_we_n,
+
+///////////////////////////////////////////////////
+// sram, 1mbit x16
+
+output  wire    [16:0]  sram_a,
+inout   wire    [15:0]  sram_dq,
+output  wire            sram_oe_n,
+output  wire            sram_we_n,
+output  wire            sram_ub_n,
+output  wire            sram_lb_n,
+
+///////////////////////////////////////////////////
+// vblank output to scaler 
+
+input   wire            vblank,
+
+///////////////////////////////////////////////////
+// i/o to 6515D breakout usb uart
+
+output  wire            dbg_tx,
+input   wire            dbg_rx,
+
+///////////////////////////////////////////////////
+// i/o pads near jtag connector user can solder to
+
+output  wire            user1,
+input   wire            user2,
+
+///////////////////////////////////////////////////
+// powerup self test, do not use
+
+inout   wire            bist,
+output  wire            vpll_feed,
+
+///////////////////////////////////////////////////
+// RFU internal i2c bus (DNU)
+
+inout   wire            aux_sda,
+output  wire            aux_scl
+
+);
+
+assign bist = 1'bZ;
+
+// reset generation
+
+    reg [24:0]  count;
+    reg         reset_n;
+
+initial begin
+    count <= 0;
+    reset_n <= 0;
+end
+always @(posedge clk_74a) begin
+    count <= count + 1'b1;
+
+    if(count[15]) begin
+        // exit reset
+        reset_n <= 1;
+    end
+
+end
+
+
+
+
+// convert 24-bit rgb data to 12-bit DDR for ARISTOTLE
+
+    wire    [23:0]  video_rgb;
     wire            video_rgb_clock;
     wire            video_rgb_clock_90;
     wire            video_de;

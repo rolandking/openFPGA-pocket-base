@@ -4,19 +4,19 @@ import pocket_pkg::rgb_t;
 `include "../svh/assert.svh"
 
 module video_sync #(
-    parameter int VISIBLE_WIDTH   = 400,
-    parameter int VISIBLE_HEIGHT  = 360,
-    parameter int TOTAL_WIDTH     = 500,
-    parameter int TOTAL_HEIGHT    = 400,
-    parameter int FRAME_FREQUENCY = 50,
-    parameter int DOT_CLOCK       = 0,
-    parameter int X_PRE           = 0,              // start the x count X_PRE pixels before DE
-    parameter int Y_PRE           = 0,              // start the y count Y_PRE lines before a valid line
+parameter int VISIBLE_WIDTH   = 400,
+parameter int VISIBLE_HEIGHT  = 360,
+parameter int TOTAL_WIDTH     = 500,
+parameter int TOTAL_HEIGHT    = 400,
+parameter int FRAME_FREQUENCY = 50,
+parameter int DOT_CLOCK       = 0,
+parameter int X_PRE           = 0,              // start the x count X_PRE pixels before DE
+parameter int Y_PRE           = 0,              // start the y count Y_PRE lines before a valid line
 
-    parameter int x_index_width    = $clog2(VISIBLE_HEIGHT),
-    parameter int y_index_width    = $clog2(VISIBLE_WIDTH),
-    parameter int row_index_width  = $clog2(TOTAL_HEIGHT),
-    parameter int col_index_width  = $clog2(TOTAL_WIDTH)
+parameter int x_index_width    = $clog2(VISIBLE_HEIGHT),
+parameter int y_index_width    = $clog2(VISIBLE_WIDTH),
+parameter int row_index_width  = $clog2(TOTAL_HEIGHT),
+parameter int col_index_width  = $clog2(TOTAL_WIDTH)
 ) (
 
     input  wire                         clk,               // should be of DOT_CLOCK frequency

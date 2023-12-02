@@ -129,6 +129,7 @@ proc generateBuildID_MIF {} {
 	set memoryDepth [expr $buildDateNumBytes + $buildTimeNumBytes]
 	
 	# Create a Memory Initialization File for output
+    file mkdir "apf"
 	set outputFileName "apf/build_id.mif"
 	set outputFile [open $outputFileName "w"]
 	
