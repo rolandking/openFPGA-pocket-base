@@ -23,14 +23,14 @@ module bridge_to_bytes (
             cache   <= bridge_wr_data;
             address <= bridge_addr;
         end else begin
-            enables <= {1'b0, enables[2:0]};
-            cache   <= {8'hx, cache[23:0]};
+            enables <= {1'b0, enables[3:1]};
+            cache   <= {cache[23:0], 8'hx};
             address <= address + 32'd1;
         end
     end
 
     always_comb begin
-        mem_address = cache[7:0];
+        mem_data    = cache[23-:8];
         mem_wr      = enables[0];
         mem_address = address;
     end
