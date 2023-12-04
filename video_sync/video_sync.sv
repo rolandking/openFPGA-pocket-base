@@ -1,22 +1,22 @@
 `timescale 1ns/1ps
 
-/* 
- *  Video output generator. 
+/*
+ *  Video output generator.
  *
  *  The module runs at clk frequency outputing to the video subsystem.
  *  MULTIPLIER can be set to an integer number of clocks where there is
  *  an enable pulse every MULTIPLIER clocks. Only when enable is asserted
- *  do the counters move forward and a pixel is output. 
+ *  do the counters move forward and a pixel is output.
  *
  *  X_PRE and Y_PRE allow you to generate the x_index, y_index and
- *  corresponding valid signals a number of cycles before the pixel value 
- *  is required. 
+ *  corresponding valid signals a number of cycles before the pixel value
+ *  is required.
  *
- *  with X_PRE / Y_PRE == 0 the rgb_in must be combinatorial on the same 
+ *  with X_PRE / Y_PRE == 0 the rgb_in must be combinatorial on the same
  *  cycle that the values change. For memory lookups set X_PRE/Y_PRE to
- *  1 or 2 
+ *  1 or 2
  *
- *  output counters, enables etc are valid for the entire period to the next 
+ *  output counters, enables etc are valid for the entire period to the next
  *  en input
  *
  *  dotclock must be X_TOTAL * Y_TOTAL * MULTIPLIER
@@ -125,6 +125,9 @@ parameter int col_index_width  = $clog2(TOTAL_WIDTH)
                 DE_LAST_ROW_PRE: begin
                     de_row <= '0;
                 end
+
+                default: begin
+                end
             endcase
         end
     end
@@ -138,6 +141,9 @@ parameter int col_index_width  = $clog2(TOTAL_WIDTH)
                 end
                 DE_LAST_COL_PRE: begin
                     de_col <= '0;
+                end
+
+                default: begin
                 end
             endcase
         end
@@ -153,6 +159,9 @@ parameter int col_index_width  = $clog2(TOTAL_WIDTH)
                     end
                     Y_LAST_ROW_PRE: begin
                         y_index_valid <= '0;
+                    end
+
+                    default: begin
                     end
                 endcase
             end
@@ -170,6 +179,9 @@ parameter int col_index_width  = $clog2(TOTAL_WIDTH)
                 X_LAST_COL_PRE: begin
                     x_index_valid <= '0;
                 end
+
+                default: begin
+                end
             endcase
         end
     end
@@ -184,4 +196,3 @@ parameter int col_index_width  = $clog2(TOTAL_WIDTH)
     end
 
 endmodule
-
