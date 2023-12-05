@@ -1,18 +1,22 @@
 `timescale 1ns/1ps
 
 module psram#(
-    parameter int CLK_FREQ = 40000000,
-    parameter int USER_CYCLES = 4,
-    parameter int ADDRESS_BITS = 23,    // include both banks
-    parameter int DATA_BITS = 16,
-    parameter int RAM_CYCLE_NANOS = 72  // add 2 for delays through the IOBUFs
+    parameter int   CLK_FREQ = 40000000,
+    parameter int   USER_CYCLES = 4,
+    parameter int   ADDRESS_BITS = 23,    // include both banks
+    parameter int   DATA_BITS = 16,
+    parameter logic WRITE_WINS = 1'b1,    // does read or write happen first
+    parameter int   RAM_CYCLE_NANOS = 72  // add 2 for delays through the IOBUFs
 )(
     input  wire                                clk,
-    input  wire  [ADDRESS_BITS-1:0]            address,
+    input  wire  [ADDRESS_BITS-1:0]            rd_address,
     input  wire                                rd_en,
+    output logic                               rd_ack,
     output logic [DATA_BITS-1:0]               rd_data,
+    input  wire  [ADDRESS_BITS-1:0]            wr_address,
     input  wire                                wr_en,
     input  wire  [DATA_BITS-1:0]               wr_data,
+    output logic                               wr_ack,
 
     // physical connection
     output logic [ADDRESS_BITS-2 :- DATA_BITS] cram_a,
@@ -56,8 +60,8 @@ module psram#(
      typedef enum logic[2:0] {
         IDLE    = 3'b000,
         READ_0  = 3'b001,
-        READ_1  = 3'b010,
-        WRITE_0 = 3'b011,
+        WRITE_0 = 3'b010,
+        READ_1  = 3'b011,
         WRITE_1 = 3'b100
      } state_t;
 
@@ -85,35 +89,53 @@ module psram#(
     // our state
     state_t state = IDLE;
 
+    // next state in idle
+    state_t next_state;
+
     always_comb begin
-        // hi-Z if output is enabled else the lower bits of the address
-        // or data
-        cram_dq    = oe_n ? (we_n ? address[DATA_BITS-1:0] : wr_data) : 'z;
-
-        // top part of the address
-        cram_a     = address[ADDRESS_BITS-2 :- DATA_BITS];
-
-        // select the correct bank using the last bit of the address
-        // to select the correct CE#
-        cram_ce0_n =  address[ADDRESS_BITS-1] || ce_n;
-        cram_ce1_n = ~address[ADDRESS_BITS-1] || ce_n;
-        cram_adv_n = adv_n;
-        cram_oe_n  = oe_n;
-        cram_lb_n  = '0;
-        cram_ub_n  = '0;
-        cram_clk   = '0;
+        next_state = WRITE_WINS ?
+            ( wr_en ? WRITE_0 : ( rd_en ? READ_0  : IDLE ) ) :
+            ( rd_en ? READ_0  : ( wr_en ? WRITE_0 : IDLE ) );
     end
 
     always_comb begin
-        ce_n  = '1;
-        we_n  = '1;
-        adv_n = '1;
-        oe_n  = '1;
+        // hi-Z if output is enabled else the lower bits of the address
+        // or data
+        cram_dq    = oe_n ? (we_n ? address_ff[DATA_BITS-1:0] : wr_data_ff) : 'z;
+
+        // top part of the address
+        cram_a     = address_ff[ADDRESS_BITS-2 :- DATA_BITS];
+
+        // select the correct bank using the last bit of the address
+        // to select the correct CE#
+        cram_ce0_n =  address_ff[ADDRESS_BITS-1] || ce_n;
+        cram_ce1_n = ~address_ff[ADDRESS_BITS-1] || ce_n;
+        cram_adv_n =  adv_n;
+        cram_oe_n  =  oe_n;
+        cram_lb_n  =  '0;
+        cram_ub_n  =  '0;
+        cram_clk   =  '0;
+    end
+
+    always_comb begin
+        ce_n   = '1;
+        we_n   = '1;
+        adv_n  = '1;
+        oe_n   = '1;
+        rd_ack = '0;
+        wr_ack = '0;
 
         case(state)
+
+            IDLE: begin
+                // assert ack on the same cycle
+                wr_ack = (next_state == WRITE_0);
+                rd_ack = (next_state == READ_0);
+            end
+
             READ_0: begin
-                ce_n  = '0;
-                adv_n = '0;
+                ce_n   = '0;
+                adv_n  = '0;
             end
 
             READ_1: begin
@@ -122,9 +144,9 @@ module psram#(
             end
 
             WRITE_0: begin
-                ce_n  = '0;
-                we_n  = '0;
-                adv_n = '0;
+                ce_n   = '0;
+                we_n   = '0;
+                adv_n  = '0;
             end
 
             WRITE_1: begin
@@ -143,12 +165,18 @@ module psram#(
         case(state)
 
             IDLE: begin
-                if(rd_en || wr_en) begin
-                    state      <= rd_en ? READ_0 : WRITE_0;
-                    address_ff <= address;
-                end else begin
-                    counter <= '0;
-                end
+                case(next_state)
+                    READ_0: begin
+                        address_ff <= rd_address;
+                    end
+                    WRITE_0: begin
+                        address_ff <= wr_address;
+                        wr_data_ff <= wr_data;
+                    end
+                    default: begin
+                        counter <= '0;
+                    end
+                endcase
             end
 
             READ_0: begin
