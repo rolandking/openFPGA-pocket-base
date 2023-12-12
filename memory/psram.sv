@@ -1,5 +1,17 @@
 `timescale 1ns/1ps
 
+`define Ceil(ParamName, Expression) \
+ localparam ParamName``_F = Expression;\
+ localparam integer ParamName``_R = ParamName``_F;\
+ localparam integer ParamName = (ParamName``_R == ParamName``_F || ParamName``_R > ParamName``_F) ? ParamName``_R : (ParamName``_R + 1);
+
+module capture#(
+    parameter int N = 0,
+    parameter int COUNTER_BITS = 0,
+    parameter real CYCLE_NANOS = 0
+)();
+endmodule
+
 module psram#(
     parameter int   CLK_FREQ = 40000000,
     parameter int   USER_CYCLES = 4,
@@ -33,13 +45,20 @@ module psram#(
     output logic                               cram_lb_n
 );
 
-    localparam real CYCLE_NANOS = 1000000000000 / CLK_FREQ;
+    localparam real CYCLE_NANOS = 1000000000 / CLK_FREQ;
 
-    localparam int N1 = $ceil(RAM_CYCLE_NANOS / CYCLE_NANOS);
-    localparam int N  = (N1 < 2) ? 2 : N1;
+//    localparam int N1 = $rtoi($ceil(RAM_CYCLE_NANOS / CYCLE_NANOS));
+    `Ceil(N1, (RAM_CYCLE_NANOS / CYCLE_NANOS))
+    localparam int N  = (N1 < 3) ? 3 : N1;
 
     localparam int COUNTER_BITS = $clog2(N);
     typedef logic [COUNTER_BITS-1:0] counter_t;
+
+    capture#(
+        .N(N),
+        .COUNTER_BITS(COUNTER_BITS),
+        .CYCLE_NANOS(CYCLE_NANOS)
+    ) capture1 ();
 
     //`STATIC_ASSERT(N <= USER_CYCLES)
 
@@ -62,7 +81,8 @@ module psram#(
         READ_0  = 3'b001,
         WRITE_0 = 3'b010,
         READ_1  = 3'b011,
-        WRITE_1 = 3'b100
+        WRITE_1 = 3'b100,
+        WRITE_2 = 3'b101
      } state_t;
 
     // register the address through the cycle
@@ -83,6 +103,9 @@ module psram#(
     // output enable low
     logic oe_n;
 
+    // output address or data
+    logic output_address;
+
     // count cycles
     counter_t counter = 0;
 
@@ -101,10 +124,12 @@ module psram#(
     always_comb begin
         // hi-Z if output is enabled else the lower bits of the address
         // or data
-        cram_dq    = oe_n ? (we_n ? address_ff[DATA_BITS-1:0] : wr_data_ff) : 'z;
+        // cram_dq    = oe_n ? ((we_n || !adv_n) ? address_ff[DATA_BITS-1:0] : wr_data_ff) : 'z;
+
+        cram_dq    = oe_n ? (output_address ? address_ff[DATA_BITS-1:0] : wr_data_ff) : 'z;
 
         // top part of the address
-        cram_a     = address_ff[ADDRESS_BITS-2 :- DATA_BITS];
+        cram_a     = address_ff[ADDRESS_BITS-2 : DATA_BITS];
 
         // select the correct bank using the last bit of the address
         // to select the correct CE#
@@ -112,18 +137,21 @@ module psram#(
         cram_ce1_n = ~address_ff[ADDRESS_BITS-1] || ce_n;
         cram_adv_n =  adv_n;
         cram_oe_n  =  oe_n;
-        cram_lb_n  =  '0;
-        cram_ub_n  =  '0;
+        cram_we_n  =  we_n;
+        cram_lb_n  =  ce_n;
+        cram_ub_n  =  ce_n;
         cram_clk   =  '0;
+        cram_cre   =  '0;
     end
 
     always_comb begin
-        ce_n   = '1;
-        we_n   = '1;
-        adv_n  = '1;
-        oe_n   = '1;
-        rd_ack = '0;
-        wr_ack = '0;
+        ce_n           = '1;
+        we_n           = '1;
+        adv_n          = '1;
+        oe_n           = '1;
+        rd_ack         = '0;
+        wr_ack         = '0;
+        output_address = '1;
 
         case(state)
 
@@ -154,6 +182,12 @@ module psram#(
                 we_n = '0;
             end
 
+            WRITE_2: begin
+                ce_n           = '0;
+                we_n           = '0;
+                output_address = '0;
+            end
+
             default: begin
             end
 
@@ -161,10 +195,11 @@ module psram#(
     end
 
     always_ff @(posedge clk) begin
-        counter <= counter + 1;
+        counter <= counter + counter_t'(1);
         case(state)
 
             IDLE: begin
+                counter <= '0;
                 case(next_state)
                     READ_0: begin
                         address_ff <= rd_address;
@@ -174,9 +209,9 @@ module psram#(
                         wr_data_ff <= wr_data;
                     end
                     default: begin
-                        counter <= '0;
                     end
                 endcase
+                state <= next_state;
             end
 
             READ_0: begin
@@ -184,7 +219,7 @@ module psram#(
             end
 
             READ_1: begin
-                if(counter == N) begin
+                if(counter == (N-1)) begin
                     rd_data <= cram_dq;
                     state   <= IDLE;
                 end
@@ -195,7 +230,11 @@ module psram#(
             end
 
             WRITE_1: begin
-                if(counter == N) begin
+                state <= WRITE_2;
+            end
+
+            WRITE_2: begin
+                if(counter == N-1) begin
                     state  <= IDLE;
                 end
             end

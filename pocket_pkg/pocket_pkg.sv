@@ -11,4 +11,4 @@ package pocket_pkg;
         logic [7:0] blue;
     } rgb_t;
 
-endpackage
+ endpackage

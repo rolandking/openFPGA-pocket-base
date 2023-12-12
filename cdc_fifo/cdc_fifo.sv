@@ -27,21 +27,21 @@ module cdc_fifo #(
     // address and data defines. mem at the end
     address_t mem_write_address, mem_read_address;
 
-    // write 
-    pointer_t 
+    // write
+    pointer_t
         write_p, write_p_next,      // write pointer for the write module's use
         write_p_gray,               // write_p converted to gray
         write_p_gray_cdc,           // write_p_gray crossed into read clock
         write_p_cdc;                // write_p decoded in read clock
 
     // read
-    pointer_t 
+    pointer_t
         read_p, read_p_next,        // read pointers for the read module's use
         read_p_gray,                // read_p converted to gray
         read_p_gray_cdc,            // read_p_gray crossed into write clock
         read_p_cdc;                 // read_p decoded in write clock
 
-    
+
     // we can write unless the write pointer has wrapped
     always_comb begin
         // pointers have an extra bit which counts wrap arounds modulus 2. So
@@ -81,7 +81,7 @@ module cdc_fifo #(
             read_p <= read_p_next;
         end
         read_data <= mem[mem_read_address];
-        read_valid <= read_ready;;
+        read_valid <= read_ready;
     end
 
     // gray encode the write pointer, pass it over the cdc and unencode it/ again
@@ -144,4 +144,3 @@ module cdc_fifo #(
 
 
 endmodule
-
