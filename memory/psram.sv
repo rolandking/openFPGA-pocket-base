@@ -106,8 +106,14 @@ module psram#(
     // output address or data
     logic output_address;
 
+    // register the output data
+    logic [15:0] cram_dq_ff;
+
     // count cycles
     counter_t counter = 0;
+
+    // on the final cycle
+    logic final_cycle;
 
     // our state
     state_t state = IDLE;
@@ -152,6 +158,8 @@ module psram#(
         rd_ack         = '0;
         wr_ack         = '0;
         output_address = '1;
+        final_cycle    = ( counter == N-1);
+        rd_data        = final_cycle ? cram_dq : cram_dq_ff;
 
         case(state)
 
@@ -178,8 +186,8 @@ module psram#(
             end
 
             WRITE_1: begin
-                ce_n = '0;
-                we_n = '0;
+                ce_n   = '0;
+                we_n   = '0;
             end
 
             WRITE_2: begin
@@ -219,9 +227,9 @@ module psram#(
             end
 
             READ_1: begin
-                if(counter == (N-1)) begin
-                    rd_data <= cram_dq;
-                    state   <= IDLE;
+                if( final_cycle ) begin
+                    cram_dq_ff <= cram_dq;
+                    state      <= IDLE;
                 end
             end
 
@@ -234,7 +242,7 @@ module psram#(
             end
 
             WRITE_2: begin
-                if(counter == N-1) begin
+                if(final_cycle) begin
                     state  <= IDLE;
                 end
             end
