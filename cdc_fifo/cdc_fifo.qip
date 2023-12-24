@@ -1,3 +1,4 @@
 set_global_assignment -name QIP_FILE           [file join $::quartus(qip_path) "../cdc_sync/cdc_sync.qip" ]
 set_global_assignment -name QIP_FILE           [file join $::quartus(qip_path) "../graycode/graycode.qip" ]
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "cdc_fifo.sv"]
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "cdc_buffer.sv"]
