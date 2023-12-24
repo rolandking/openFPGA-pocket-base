@@ -51,7 +51,7 @@ module cdc_buffer(
 
 
     (* ramstyle="mlab" *)
-    logic [15:0] mem [0:31];
+    logic [15:0] mem [32];
 
     always_ff @(posedge write_clk) begin
         if(write_en) begin
