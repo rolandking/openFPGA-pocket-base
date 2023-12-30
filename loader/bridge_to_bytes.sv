@@ -3,16 +3,20 @@
 // at a time to memory
 
 module bridge_to_bytes#(
-    parameter logic[31:0] valid_bits = '1,
-    parameter int read_cycles = 2
+    // any address & fixed_mask but be == fixed_bits
+    parameter logic[31:0] fixed_bits = '0,
+    parameter logic[31:0] fixed_mask = '1,
+    parameter int read_cycles = 2,
+    parameter int write_cycles = 1
 ) (
     input logic         clk,
 
     input  logic [31:0]  bridge_addr,
-    input  logic [31:0]  bridge_wr_data,
     input  logic         bridge_wr,
-    output logic [31:0]  bridge_rd_data,
+    input  logic [31:0]  bridge_wr_data,
     input  logic         bridge_rd,
+    output logic [31:0]  bridge_rd_data,
+    output logic         bridge_rd_ready,
 
     output logic [31:0]  mem_address,
     output logic [7:0]   mem_wr_data,
@@ -23,51 +27,79 @@ module bridge_to_bytes#(
     output logic         selected
 );
 
-    localparam int                    num_enables   = 4 * read_cycles;
-    localparam logic[num_enables-1:0] read_enables  = {4{{(read_cycles-1){1'b0}},1'b1}};
-    localparam logic[num_enables-1:0] write_enables = {{(num_enables-4){1'b0}},4'b1111};
+    localparam int max_cycles = (read_cycles > write_cycles) ? read_cycles : write_cycles;
 
-    logic [num_enables-1:0]           enables;
-    logic [31:0]                     write_cache, read_cache;
-    logic [31:0]                     address;
-    logic                            valid_address;
-    logic                            is_read;
-    logic                            enable;
+    /*
+     * enables has one bit for each enable cycle plus one set bit for the
+     * final cycle of the sequence
+     */
+    localparam int num_enables   = 4 * max_cycles + 1;
+    typedef logic[num_enables-1:0] enable_t;
+    localparam enable_t read_enables  = {
+        {4*(max_cycles-read_cycles){1'b0}},
+        1'b1,
+        {4{{(read_cycles-1){1'b0}},1'b1}}
+    };
+    localparam enable_t write_enables  = {
+        {4*(max_cycles-write_cycles){1'b0}},
+        1'b1,
+        {4{{(write_cycles-1){1'b0}},1'b1}}
+    };
 
-    always_comb begin
-        selected = (bridge_addr & ~valid_bits) == '0;
-    end
+    enable_t      enables;
+    logic         address_ok, selected_ff;
+    logic [31:0]  write_cache, read_cache;
+    logic [31:0]  address;
+    logic         valid_address;
+    logic         is_read;
+    logic         enable, pre_enable;
+    logic         last_cycle;
+    logic         idle;
 
     always_ff @(posedge clk) begin
-        if((bridge_wr || bridge_rd) && selected) begin
-            if(bridge_wr) begin
-                enables <= write_enables;
-                is_read <= 1'b0;
-            end else begin
+        selected_ff <= selected;
+        if(idle) begin
+            if(bridge_rd && address_ok) begin
                 enables <= read_enables;
                 is_read <= 1'b1;
+            end
+            if(bridge_wr && address_ok) begin
+                enables <= write_enables;
+                is_read <= 1'b0;
             end
             write_cache <= bridge_wr_data;
             address     <= bridge_addr;
         end else begin
-            enables <= {1'b0, enables[num_enables-1:1]};
             if(enable) begin
                 write_cache <= {write_cache[23:0], 8'hx};
                 read_cache  <= {read_cache[23:0], mem_rd_data};
-                address     <= address + 32'd1;
             end else begin
                 read_cache[7:0] <= mem_rd_data;
             end
+
+            if(pre_enable) begin
+                address <= address + 32'd1;
+            end
+
+            enables <= {1'b0, enables[num_enables-1:1]};
         end
     end
 
     always_comb begin
-        mem_wr_data    = write_cache[31-:8];
-        enable         = enables[0];
-        mem_wr         = enable && ~is_read;
-        mem_rd         = enable &&  is_read;
-        mem_address    = address;
-        bridge_rd_data = read_cache;
+        address_ok           = (bridge_addr & fixed_mask) == fixed_bits;
+        // selected from the rd or wr all the way to the next one as data is only
+        // read just before the next read cycle
+        selected             = (bridge_rd || bridge_wr) ? address_ok :  selected_ff;
+        mem_wr_data          = write_cache[31-:8];
+        idle                 = (enables == '0);
+        last_cycle           = (enables == num_enables'(1'b1));
+        enable               = enables[0] && !last_cycle;
+        pre_enable           = enables[1];
+        mem_wr               = enable && ~is_read;
+        mem_rd               = enable &&  is_read;
+        mem_address          = address;
+        bridge_rd_data       = read_cache;
+        bridge_rd_ready      = last_cycle && is_read;
     end
 
 endmodule

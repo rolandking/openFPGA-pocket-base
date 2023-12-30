@@ -3,14 +3,11 @@
 module remapper#(
     parameter logic [31:0] BASE_ADDRESS   = 32'h0,
     parameter logic [31:0] MAP_ADDRESS    = 32'h0,
-    parameter logic [15:0] MAP_LENGTH     = 16'd0,
-    parameter logic        HAS_READ       = 1,
-    parameter logic        HAS_WRITE      = 1,
-    parameter int          NUM_MAPS       = 1
+    parameter logic [15:0] MAP_LENGTH     = 16'd0
 )(
-    input  logic[31:1]     raw_address,
+    input  logic[31:0]     raw_address,
     output logic           selected,
-    output logic           mapped_address
+    output logic[31:0]     mapped_address
 );
 
     localparam logic [31:0] END_ADDRESS = BASE_ADDRESS + 32'(MAP_LENGTH);
