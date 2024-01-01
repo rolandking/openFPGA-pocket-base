@@ -1,4 +1,4 @@
-package pocket_pkg;
+package pocket;
 
     typedef enum logic {
         CART_DIR_OUTPUT = 1'b1,
@@ -57,5 +57,13 @@ package pocket_pkg;
         logic [7:0] rtrig;
         logic [7:0] ltrip;
     } trig_t;
+
+    typedef logic [31:0] bridge_addr_t;
+    typedef logic [31:0] bridge_data_t;
+
+    typedef struct {
+        bridge_addr_t from_addr;
+        bridge_addr_t to_addr;
+    } bridge_addr_range_t;
 
  endpackage

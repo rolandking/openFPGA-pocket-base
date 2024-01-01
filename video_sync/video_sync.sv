@@ -22,7 +22,6 @@
  *  dotclock must be X_TOTAL * Y_TOTAL * MULTIPLIER
 */
 
-import pocket_pkg::rgb_t;
 `include "../svh/assert.svh"
 
 module video_sync #(
@@ -50,7 +49,7 @@ parameter int col_index_width  = $clog2(TOTAL_WIDTH)
     output logic                        hs,                // offset from the start of the line
     output logic                        de,                // enabled for the entire visible line
     output logic                        skip,              // true if the pixel should be skipped
-    output rgb_t                        rgb,               // rgb output
+    output pocket::rgb_t                rgb,               // rgb output
 
     // outputs to drive video logic
     output logic                        line_start,        // pulse at the start of each line, before HS
@@ -59,7 +58,7 @@ parameter int col_index_width  = $clog2(TOTAL_WIDTH)
     output logic[x_index_width-1:0]     x_index,           // x_index of the dot, may be offset by X_PRE
     output logic                        x_index_valid,     // true when the x_index is valid
 
-    input  rgb_t                        rgb_in             // input rgb, the module will deal with blanking it for you
+    input  pocket::rgb_t                rgb_in             // input rgb, the module will deal with blanking it for you
 );
 
     typedef logic[x_index_width-1:0]    x_index_t;
@@ -191,7 +190,7 @@ parameter int col_index_width  = $clog2(TOTAL_WIDTH)
         hs  = (current_col == HS_COL) && en;
         de  = de_row && de_col;
         // TODO: add the flags and mode switch here
-        rgb = de ? rgb_in : rgb_t'('0);
+        rgb = de ? rgb_in : pocket::rgb_t'('0);
         skip = de && ~en;
     end
 
