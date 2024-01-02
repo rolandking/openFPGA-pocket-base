@@ -71,7 +71,6 @@ package pocket;
  interface bridge_if(
     input wire clk
  );
-    logic                 endian_little;
     pocket::bridge_addr_t addr;
     pocket::bridge_data_t wr_data;
     logic                 wr;
@@ -95,6 +94,3 @@ package pocket;
  `define BRIDGE_CONNECT_MASTER_SLAVE(master,slave)         \
     `BRIDGE_CONNECT_MASTER_SLAVE_NO_READ(master,slave)     \
     `BRIDGE_CONNECT_MASTER_SLAVE_READ(master,slave)
-
-`define BRIDGE_SET_ENDIAN_LITTLE(master,little)            \
-    always_comb master.endian_little = (little ? 1'b1 : 1'b0);
