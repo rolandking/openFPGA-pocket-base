@@ -6,23 +6,16 @@
  * the direction
  */
 
-typedef enum logic {
-    FROM_PORT  = 1'b0,
-    TO_PORT    = 1'b1
-} port_dir_e;
-
 // bundle the in and out data and the direction in one interface
 interface port_if #(
     parameter int hi_index = 7,
     parameter int lo_index = 0
 ) (
-    input  wire                      clk,
-
     inout  logic [hi_index:lo_index] port_inout,
     output logic                     port_dir
 );
     // select the direction and wire all the input/outputs up
-    port_dir_e                       dir;
+    logic                            dir_to_port;
 
     // when FROM_PORT, from_cart has the data, to_port is 'z
     logic [hi_index:lo_index]        from_port;
@@ -32,30 +25,24 @@ interface port_if #(
     logic [hi_index:lo_index]        to_port;
 
     always_comb begin
-        from_port = port_inout;
-        port_dir  = dir;
-
-        case(dir)
-            FROM_PORT: begin
-                port_inout = 'z;
-            end
-            TO_PORT: begin
-                port_inout= to_port;
-            end
-            default: begin
-                port_inout = 'z;
-            end
-        endcase
+        port_dir   = dir_to_port;
+        from_port  = port_inout;
+        port_inout = dir_to_port ? to_port : 'z;
     end
 endinterface
 
 // tie the port off to be an input. Set to_port so any
 // attempt to use it will give a multiple driver error
-`define PORT_TIE_OFF_FROM_PORT(port)   \
+`define PORT_TIE_OFF_FROM_PORT(_X)     \
     always_comb begin                  \
-        port.dir     = FROM_PORT;      \
-        port.to_port = 'x;             \
+        _X.dir_to_port = '0;           \
+        _X.to_port     = 'x;           \
     end
 
-`define PORT_TIE_OFF_TO_PORT(port)     \
-    always_comb port.dir = TO_PORT;
+// tie the port off to be an output and set up a fixed
+// value
+`define PORT_TIE_OFF_TO_PORT(_X, _Y)         \
+    always_comb begin                        \
+        _X.dir_to_port = 1'b1;               \
+        _X.to_port     =  _Y;                \
+    end
