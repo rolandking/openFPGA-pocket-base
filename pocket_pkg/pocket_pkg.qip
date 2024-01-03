@@ -1,1 +1,3 @@
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "pocket_pkg.sv"]
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "bridge_if.sv"]
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "port_if.sv"]
