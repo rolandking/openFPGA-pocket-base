@@ -29,20 +29,15 @@ interface port_if #(
         from_port  = port_inout;
         port_inout = dir_to_port ? to_port : 'z;
     end
+
+    function automatic tie_off_from_port();
+        dir_to_port = '0;
+        to_port     = 'x;
+    endfunction
+
+    function automatic tie_off_to_port(logic[hi_index:lo_index] value);
+        dir_to_port = 1'b1;
+        to_port     = value;
+    endfunction
+
 endinterface
-
-// tie the port off to be an input. Set to_port so any
-// attempt to use it will give a multiple driver error
-`define PORT_TIE_OFF_FROM_PORT(_X)     \
-    always_comb begin                  \
-        _X.dir_to_port = '0;           \
-        _X.to_port     = 'x;           \
-    end
-
-// tie the port off to be an output and set up a fixed
-// value
-`define PORT_TIE_OFF_TO_PORT(_X, _Y)         \
-    always_comb begin                        \
-        _X.dir_to_port = 1'b1;               \
-        _X.to_port     =  _Y;                \
-    end
