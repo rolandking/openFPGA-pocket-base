@@ -15,7 +15,11 @@ module bridge_master #(
     parameter int                         NUM_LEAVES = 1,
     parameter pocket::bridge_addr_range_t ADDR_RANGES[NUM_LEAVES] = '{NUM_LEAVES
         {'{from_addr:'0,to_addr:'1}}
-    }
+    },
+
+    // temporary parameter to deal with core_bridge's failure to adhere
+    // to the spec. Delay the read signal by one cycle
+    parameter logic                       DELAY_RD = 1
 ) (
     output logic bridge_endian_little,
     bridge_if    bridge_in,
@@ -28,6 +32,18 @@ module bridge_master #(
      pocket::bridge_data_t wr_data_ff;
      logic                 rd_ff, wr_ff;
      logic                 selected[NUM_LEAVES], selected_ff[NUM_LEAVES];
+
+     // FIXME get rid of this crap
+     logic rd_pipe[3];
+     always @(posedge bridge_in.clk) begin
+        rd_pipe[2] <= rd_pipe[1];
+        rd_pipe[1] <= rd_pipe[0];
+        rd_pipe[0] <= rd_ff;
+     end
+
+     wire rd_trigger = DELAY_RD ? rd_pipe[2] : rd_ff;
+
+     // FIXME get rid of this crap
 
      generate
         genvar i;
@@ -71,7 +87,7 @@ module bridge_master #(
                 bridge_out[slave].addr    = addr_ff;
                 bridge_out[slave].wr_data = wr_data_ff;
                 bridge_out[slave].wr      = wr_ff && selected_ff[slave];
-                bridge_out[slave].rd      = rd_ff && selected_ff[slave];
+                bridge_out[slave].rd      = rd_trigger && selected_ff[slave];
                 rd_data[slave]            = bridge_out[slave].rd_data;
             end
         end

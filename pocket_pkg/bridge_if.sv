@@ -10,7 +10,7 @@
     logic                 rd;
 
     function automatic connect(
-        ref pocket::bridge_addr_t _addr, 
+        ref pocket::bridge_addr_t _addr,
         ref pocket::bridge_data_t _wr_data,
         ref logic                 _wr,
         ref pocket::bridge_data_t _rd_data,
@@ -38,7 +38,7 @@
         _L.addr          = _T.addr;                 \
         _L.wr_data       = _T.wr_data;              \
         _L.wr            = _T.wr;                   \
-        _L.rd            = _T.wr;                   \
+        _L.rd            = _T.rd;                   \
     end
 
  `define BRIDGE_CONNECT_TREE_LEAF_READ(_T,_L)    \
