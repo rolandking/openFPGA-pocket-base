@@ -10,10 +10,7 @@
 interface port_if #(
     parameter int hi_index = 7,
     parameter int lo_index = 0
-) (
-    inout  logic [hi_index:lo_index] port_inout,
-    output logic                     port_dir
-);
+) ();
     // select the direction and wire all the input/outputs up
     logic                            dir_to_port;
 
@@ -24,11 +21,11 @@ interface port_if #(
     // to from_port
     logic [hi_index:lo_index]        to_port;
 
-    always_comb begin
+    function automatic connect(ref logic [hi_index:lo_index] port_inout, ref logic port_dir);
         port_dir   = dir_to_port;
         from_port  = port_inout;
         port_inout = dir_to_port ? to_port : 'z;
-    end
+    endfunction
 
     function automatic tie_off_from_port();
         dir_to_port = '0;
