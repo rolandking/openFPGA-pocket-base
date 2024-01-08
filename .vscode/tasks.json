@@ -24,6 +24,16 @@
             }
         },
         {
+            "label": "Elaborate image",
+            "type": "shell",
+            "command": "docker run -it --rm -v $(pwd):/build -w /build/image/src/fpga --platform linux/amd64 quartus_pocket_macos quartus_map ap_core",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
             "label": "Compile image",
             "type": "shell",
             "command": "docker run -it --rm -v $(pwd):/build -w /build/image/src/fpga --platform linux/amd64 quartus_pocket_macos quartus_sh --flow compile ap_core",
@@ -37,6 +47,16 @@
             "label": "Elaborate template",
             "type": "shell",
             "command": "docker run -it --rm -v $(pwd):/build -w /build/template/src/fpga --platform linux/amd64 quartus_pocket_macos quartus_map ap_core",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Compile template",
+            "type": "shell",
+            "command": "docker run -it --rm -v $(pwd):/build -w /build/template/src/fpga --platform linux/amd64 quartus_pocket_macos quartus_sh --flow compile ap_core",
             "problemMatcher": [],
             "group": {
                 "kind": "build",

@@ -41,15 +41,9 @@ parameter int row_index_width  = $clog2(TOTAL_HEIGHT),
 parameter int col_index_width  = $clog2(TOTAL_WIDTH)
 ) (
 
-    input  wire                         clk,               // should be of DOT_CLOCK frequency
+    // clks in, all other data out
+    video_if                            video,
     input  wire                         en,                // clock enable
-
-    // outputs for the pocket video system
-    output logic                        vs,                // VS is also the start of the first line
-    output logic                        hs,                // offset from the start of the line
-    output logic                        de,                // enabled for the entire visible line
-    output logic                        skip,              // true if the pixel should be skipped
-    output pocket::rgb_t                rgb,               // rgb output
 
     // outputs to drive video logic
     output logic                        line_start,        // pulse at the start of each line, before HS
@@ -97,7 +91,7 @@ parameter int col_index_width  = $clog2(TOTAL_WIDTH)
     row_index_t current_row = '0;
     col_index_t current_col = '0;
 
-    always_ff @(posedge clk) begin
+    always_ff @(posedge video.rgb_clock) begin
         if(en) begin
             line_start <= '0;
             if(current_col == SCREEN_LAST_COL) begin
@@ -115,7 +109,7 @@ parameter int col_index_width  = $clog2(TOTAL_WIDTH)
     end
 
     logic de_row;
-    always_ff @(posedge clk) begin
+    always_ff @(posedge video.rgb_clock) begin
         if(en) begin
             case (current_row)
                 DE_FIRST_ROW_PRE: begin
@@ -132,7 +126,7 @@ parameter int col_index_width  = $clog2(TOTAL_WIDTH)
     end
 
     logic de_col;
-    always_ff @(posedge clk) begin
+    always_ff @(posedge video.rgb_clock) begin
         if(en) begin
             case (current_col)
                 DE_FIRST_COL_PRE: begin
@@ -148,7 +142,7 @@ parameter int col_index_width  = $clog2(TOTAL_WIDTH)
         end
     end
 
-    always @(posedge clk) begin
+    always @(posedge video.rgb_clock) begin
         if(en) begin
             if(current_col == SCREEN_LAST_COL) begin
                 y_index <= y_index_valid ? (y_index + y_index_t'(1'b1) ) : '0;
@@ -167,7 +161,7 @@ parameter int col_index_width  = $clog2(TOTAL_WIDTH)
         end
     end
 
-    always @(posedge clk) begin
+    always @(posedge video.rgb_clock) begin
         if(en) begin
             x_index <= x_index_valid ? (x_index + x_index_t'(1'b1) ) : '0;
             case (current_col)
@@ -186,12 +180,12 @@ parameter int col_index_width  = $clog2(TOTAL_WIDTH)
     end
 
     always_comb begin
-        vs  = (current_row == VS_ROW) && (current_col == VS_COL) && en;
-        hs  = (current_col == HS_COL) && en;
-        de  = de_row && de_col;
+        video.vs  = (current_row == VS_ROW) && (current_col == VS_COL) && en;
+        video.hs  = (current_col == HS_COL) && en;
+        video.de  = de_row && de_col;
         // TODO: add the flags and mode switch here
-        rgb = de ? rgb_in : pocket::rgb_t'('0);
-        skip = de && ~en;
+        video.rgb = video.de ? rgb_in : pocket::rgb_t'('0);
+        video.skip = video.de && ~en;
     end
 
 endmodule

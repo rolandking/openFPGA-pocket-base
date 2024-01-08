@@ -31,18 +31,8 @@ module psram#(
     output logic                               wr_ack,
 
     // physical connection
-    output logic [ADDRESS_BITS-2 :- DATA_BITS] cram_a,
-    inout  logic [DATA_BITS-1:0]               cram_dq,
-    input  logic                               cram_wait,
-    output logic                               cram_clk,
-    output logic                               cram_adv_n,
-    output logic                               cram_cre,
-    output logic                               cram_ce0_n,
-    output logic                               cram_ce1_n,
-    output logic                               cram_oe_n,
-    output logic                               cram_we_n,
-    output logic                               cram_ub_n,
-    output logic                               cram_lb_n
+    cram_if                                    cram,
+    inout  logic [DATA_BITS-1:0]               cram_dq
 );
 
     localparam real CYCLE_NANOS = 1000000000 / CLK_FREQ;
@@ -135,19 +125,19 @@ module psram#(
         cram_dq    = oe_n ? (output_address ? address_ff[DATA_BITS-1:0] : wr_data_ff) : 'z;
 
         // top part of the address
-        cram_a     = address_ff[ADDRESS_BITS-2 : DATA_BITS];
+        cram.a     = address_ff[ADDRESS_BITS-2 : DATA_BITS];
 
         // select the correct bank using the last bit of the address
         // to select the correct CE#
-        cram_ce0_n =  address_ff[ADDRESS_BITS-1] || ce_n;
-        cram_ce1_n = ~address_ff[ADDRESS_BITS-1] || ce_n;
-        cram_adv_n =  adv_n;
-        cram_oe_n  =  oe_n;
-        cram_we_n  =  we_n;
-        cram_lb_n  =  ce_n;
-        cram_ub_n  =  ce_n;
-        cram_clk   =  '0;
-        cram_cre   =  '0;
+        cram.ce0_n =  address_ff[ADDRESS_BITS-1] || ce_n;
+        cram.ce1_n = ~address_ff[ADDRESS_BITS-1] || ce_n;
+        cram.adv_n =  adv_n;
+        cram.oe_n  =  oe_n;
+        cram.we_n  =  we_n;
+        cram.lb_n  =  ce_n;
+        cram.ub_n  =  ce_n;
+        cram.clk   =  '0;
+        cram.cre   =  '0;
     end
 
     always_comb begin

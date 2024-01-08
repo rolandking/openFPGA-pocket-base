@@ -6,12 +6,9 @@
  */
 
 interface cram_if;
-    logic [21:0]  a;
-    logic [15:0]  data_to_ram;
-    logic [15:0]  data_from_ram;
-    logic         dq_is_addr;       // asserted dq = addr[15:0], else dq = data_to_ram
-    logic         wt;               // wait
+    logic [21:16] a;
     logic         clk;
+    logic         wt;               // wait
     logic         adv_n;
     logic         cre;
     logic         ce0_n;
@@ -23,7 +20,6 @@ interface cram_if;
 
     function automatic connect(
         ref logic [21:16] _a,
-        ref logic [15:0]  _dq,
         ref logic         _clk,
         ref logic         _wait,
         ref logic         _adv_n,
@@ -36,9 +32,7 @@ interface cram_if;
         ref logic         _lb_n
     );
 
-        _a            = a[21:16];
-        _dq           = oe_n ? ( dq_is_addr ? a[15:0] : data_to_ram ) : 'Z;
-        data_from_ram = _dq;
+        _a            = a;
         _clk          = clk;
         wt            = _wait;
         _adv_n        = adv_n;
@@ -54,7 +48,6 @@ interface cram_if;
 
     function automatic tie_off();
         a              = '0;
-        data_to_ram    = 'Z;
         clk            = '0;
         adv_n          = 1'b1;
         cre            = 1'b0;
