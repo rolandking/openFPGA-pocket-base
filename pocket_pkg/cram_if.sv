@@ -6,45 +6,21 @@
  */
 
 interface cram_if;
-    logic [21:16] a;
-    logic         clk;
-    logic         wt;               // wait
-    logic         adv_n;
-    logic         cre;
-    logic         ce0_n;
-    logic         ce1_n;
-    logic         oe_n;
-    logic         we_n;
-    logic         ub_n;
-    logic         lb_n;
+    wire [15:0]   data_out;
+    inout wire [15:0]   data_in;
+    wire          in_en;
 
-    function automatic connect(
-        ref logic [21:16] _a,
-        ref logic         _clk,
-        ref logic         _wait,
-        ref logic         _adv_n,
-        ref logic         _cre,
-        ref logic         _ce0_n,
-        ref logic         _ce1_n,
-        ref logic         _oe_n,
-        ref logic         _we_n,
-        ref logic         _ub_n,
-        ref logic         _lb_n
-    );
-
-        _a            = a;
-        _clk          = clk;
-        wt            = _wait;
-        _adv_n        = adv_n;
-        _cre          = cre;
-        _ce0_n        = ce0_n;
-        _ce1_n        = ce1_n;
-        _oe_n         = oe_n;
-        _we_n         = we_n;
-        _ub_n         = ub_n;
-        _lb_n         = lb_n;
-
-    endfunction
+    wire [21:16] a;
+    wire         clk;
+    wire         _wait;               // wait
+    wire         adv_n;
+    wire         cre;
+    wire         ce0_n;
+    wire         ce1_n;
+    wire         oe_n;
+    wire         we_n;
+    wire         ub_n;
+    wire         lb_n;
 
     function automatic tie_off();
         a              = '0;
@@ -58,5 +34,47 @@ interface cram_if;
         ub_n           = 1'b1;
         lb_n           = 1'b1;
     endfunction
-
 endinterface
+
+module cram_connect(
+    inout  wire [15:0]  dq,
+    output wire [21:16] a,
+    output wire         clk,
+    input  wire         _wait,
+    output wire         adv_n,
+    output wire         cre,
+    output wire         ce0_n,
+    output wire         ce1_n,
+    output wire         oe_n,
+    output wire         we_n,
+    output wire         ub_n,
+    output wire         lb_n,
+
+    cram_if             cram
+);
+    genvar i;
+    generate
+        for(i = 0 ; i < 16 ; i++) begin : gen_tran
+            tran (dq[i], cram.data_in[i]);
+            tran (dq[i], cram.data_out[i]);
+        end
+    endgenerate
+    always_comb begin
+        a = cram.a;
+        clk = cram.clk;
+        cram._wait = _wait;
+        adv_n = cram.adv_n;
+        cre = cram.cre;
+        ce0_n = cram.ce0_n;
+        ce1_n = cram.ce1_n;
+        oe_n = cram.oe_n;
+        we_n = cram.we_n;
+        ub_n = cram.ub_n;
+        lb_n = cram.lb_n;
+//FIXME:
+// I think you can do this - you just aren't setting cram.data_out in the final module
+// so tran() dq to cram.data_in then do this assignment and change psram to set cram.data_out
+//        cram.data_in = oe_n ? cram.data_out : 'Z;
+    end
+
+endmodule

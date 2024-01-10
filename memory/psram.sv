@@ -122,7 +122,7 @@ module psram#(
         // or data
         // cram_dq    = oe_n ? ((we_n || !adv_n) ? address_ff[DATA_BITS-1:0] : wr_data_ff) : 'z;
 
-        cram_dq    = oe_n ? (output_address ? address_ff[DATA_BITS-1:0] : wr_data_ff) : 'z;
+        cram.data_out = oe_n ? (output_address ? address_ff[DATA_BITS-1:0] : wr_data_ff) : 'z;
 
         // top part of the address
         cram.a     = address_ff[ADDRESS_BITS-2 : DATA_BITS];
@@ -149,7 +149,7 @@ module psram#(
         wr_ack         = '0;
         output_address = '1;
         final_cycle    = ( counter == N-1);
-        rd_data        = final_cycle ? cram_dq : cram_dq_ff;
+        rd_data        = final_cycle ? cram.data_in : cram_dq_ff;
 
         case(state)
 
@@ -218,7 +218,7 @@ module psram#(
 
             READ_1: begin
                 if( final_cycle ) begin
-                    cram_dq_ff <= cram_dq;
+                    cram_dq_ff <= cram.data_in;
                     state      <= IDLE;
                 end
             end
