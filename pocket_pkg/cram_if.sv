@@ -36,6 +36,28 @@ interface cram_if;
     endfunction
 endinterface
 
+module tristate #(
+    parameter int WIDTH = 1
+) (
+    inout wire [WIDTH-1:0] port,
+    inout wire [WIDTH-1:0] data_in,
+    input wire [WIDTH-1:0] data_out,
+    input wire             oe_n
+);
+
+    genvar i;
+    generate
+        for(i = 0 ; i < 16 ; i++) begin : gen_tran
+            tran (port[i], data_in[i]);
+        end
+    endgenerate
+
+    always_comb begin
+        port = oe_n ? data_out : 'Z;
+    end
+
+endmodule
+
 module cram_connect(
     inout  wire [15:0]  dq,
     output wire [21:16] a,
@@ -52,12 +74,14 @@ module cram_connect(
 
     cram_if             cram
 );
-    genvar i;
-    generate
-        for(i = 0 ; i < 16 ; i++) begin : gen_tran
-            tran (dq[i], cram.data_in[i]);
-        end
-    endgenerate
+    tristate #(
+        .WIDTH (16)
+    ) ts (
+        .port      (dq),
+        .data_in   (cram.data_in),
+        .data_out  (cram.data_out),
+        .oe_n      (cram.oe_n)
+    );
 
     always_comb begin
         a = cram.a;
@@ -71,7 +95,6 @@ module cram_connect(
         we_n = cram.we_n;
         ub_n = cram.ub_n;
         lb_n = cram.lb_n;
-        dq = oe_n ? cram.data_out : 'Z;
     end
 
 endmodule
