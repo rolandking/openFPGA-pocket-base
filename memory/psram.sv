@@ -118,11 +118,7 @@ module psram#(
     end
 
     always_comb begin
-        // hi-Z if output is enabled else the lower bits of the address
-        // or data
-        // cram_dq    = oe_n ? ((we_n || !adv_n) ? address_ff[DATA_BITS-1:0] : wr_data_ff) : 'z;
-
-        cram.data_out = oe_n ? (output_address ? address_ff[DATA_BITS-1:0] : wr_data_ff) : 'z;
+        cram.data_out = output_address ? address_ff[DATA_BITS-1:0] : wr_data_ff;
 
         // top part of the address
         cram.a     = address_ff[ADDRESS_BITS-2 : DATA_BITS];

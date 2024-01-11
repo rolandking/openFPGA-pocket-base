@@ -56,9 +56,9 @@ module cram_connect(
     generate
         for(i = 0 ; i < 16 ; i++) begin : gen_tran
             tran (dq[i], cram.data_in[i]);
-            tran (dq[i], cram.data_out[i]);
         end
     endgenerate
+
     always_comb begin
         a = cram.a;
         clk = cram.clk;
@@ -71,10 +71,7 @@ module cram_connect(
         we_n = cram.we_n;
         ub_n = cram.ub_n;
         lb_n = cram.lb_n;
-//FIXME:
-// I think you can do this - you just aren't setting cram.data_out in the final module
-// so tran() dq to cram.data_in then do this assignment and change psram to set cram.data_out
-//        cram.data_in = oe_n ? cram.data_out : 'Z;
+        dq = oe_n ? cram.data_out : 'Z;
     end
 
 endmodule
