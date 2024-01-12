@@ -1,3 +1,4 @@
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "enable_hold.sv"]
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "pulse_generator.sv"]
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "edge_detect.sv"]
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "tristate_buffer.sv"]

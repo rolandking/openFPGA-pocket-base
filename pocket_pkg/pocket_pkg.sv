@@ -5,6 +5,11 @@ package pocket;
         CART_DIR_INPUT  = 1'b0
     } cart_direction_e;
 
+    typedef enum logic {
+        DIR_IN  = 1'b0,
+        DIR_OUT = 1'b1
+    } dir_e;
+
     typedef struct packed {
         logic [7:0] red;
         logic [7:0] green;

@@ -28,18 +28,18 @@ module bridge_master #(
 
     always_comb bridge_endian_little = ENDIAN_LITTLE;
 
-     pocket::bridge_addr_t addr_ff;
-     pocket::bridge_data_t wr_data_ff;
-     logic                 rd_ff, wr_ff;
-     logic                 selected[NUM_LEAVES], selected_ff[NUM_LEAVES];
+    pocket::bridge_addr_t addr_ff;
+    pocket::bridge_data_t wr_data_ff;
+    logic                 rd_ff, wr_ff;
+    logic                 selected[NUM_LEAVES], selected_ff[NUM_LEAVES];
 
-     // FIXME get rid of this crap
-     logic rd_pipe[3];
-     always @(posedge bridge_in.clk) begin
+    // FIXME get rid of this crap
+    logic rd_pipe[3];
+    always @(posedge bridge_in.clk) begin
         rd_pipe[2] <= rd_pipe[1];
         rd_pipe[1] <= rd_pipe[0];
         rd_pipe[0] <= rd_ff;
-     end
+    end
 
      wire rd_trigger = DELAY_RD ? rd_pipe[2] : rd_ff;
 
