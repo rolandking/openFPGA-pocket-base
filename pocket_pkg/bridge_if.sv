@@ -9,7 +9,6 @@
     pocket::bridge_data_t rd_data;
     logic                 rd;
 
-    // connect the bridge_if to top level signal
     function automatic connect(
         ref pocket::bridge_addr_t _addr,
         ref pocket::bridge_data_t _wr_data,
@@ -40,6 +39,25 @@
     endfunction
 
  endinterface
+
+ module bridge_connect(
+    input  pocket::bridge_addr_t addr,
+    input  pocket::bridge_data_t wr_data,
+    input  logic                 wr,
+    output pocket::bridge_data_t rd_data,
+    input  logic                 rd,
+    bridge_if                    bridge
+);
+
+    always_comb begin
+        bridge.addr     = addr;
+        bridge.wr_data  = wr_data;
+        bridge.wr       = wr;
+        bridge.rd       = rd;
+        rd_data         = bridge.rd_data;
+    end
+
+endmodule
 
  `define BRIDGE_CONNECT_TREE_LEAF_NO_READ(_T,_L) \
     always_comb begin                                      \

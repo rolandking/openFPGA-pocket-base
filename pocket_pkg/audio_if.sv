@@ -1,22 +1,11 @@
 `timescale 1ns/1ps
 
 interface audio_if;
+
     logic mclk;
     logic adc;
     logic dac;
     logic lrck;
-
-    function automatic connect(
-        ref logic _mclk,
-        ref logic _adc,
-        ref logic _dac,
-        ref logic _lrck
-    );
-        _mclk = mclk;
-        adc   = _adc;
-        _dac  = dac;
-        _lrck = lrck;
-    endfunction
 
     function automatic tie_off;
         mclk = '0;
@@ -25,6 +14,24 @@ interface audio_if;
     endfunction
 
 endinterface
+
+module audio_connect(
+    output wire mclk,
+    input  wire adc,
+    output wire dac,
+    output wire lrck,
+
+    audio_if    audio
+);
+
+    always_comb begin
+        mclk      = audio.mclk;
+        audio.adc = adc;
+        dac       = audio.dac;
+        lrck      = audio.lrck;
+    end
+
+endmodule
 
 module audio_dummy(
     input wire clk_12_288_mhz,

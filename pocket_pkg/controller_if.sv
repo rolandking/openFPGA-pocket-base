@@ -18,3 +18,19 @@ interface controller_if;
     endfunction
 
 endinterface
+
+module controller_connect (
+    input pocket::key_t key,
+    input pocket::joy_t joy,
+    input pocket::trig_t trig,
+
+    controller_if        controller
+);
+
+    always_comb begin
+        controller.key  = key;
+        controller.joy  = joy;
+        controller.trig = trig;
+    end
+
+endmodule

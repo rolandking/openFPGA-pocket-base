@@ -6,48 +6,67 @@
  */
 
 interface dram_if;
-    logic [12:0]  a;
-    logic [1:0]   ba;
-    logic [15:0]  dq;
-    logic [1:0]   dqm;
-    logic         clk;
-    logic         cke;
-    logic         ras_n;
-    logic         cas_n;
-    logic         we_n;
-
-    function automatic connect(
-        ref logic [12:0] _a,
-        ref logic [1:0]  _ba,
-        ref logic [15:0] _dq,
-        ref logic [1:0]  _dqm,
-        ref logic        _clk,
-        ref logic        _cke,
-        ref logic        _ras_n,
-        ref logic        _cas_n,
-        ref logic        _we_n
-    );
-        _a     = a;
-        _ba    = ba;
-        _dq    = dq;
-        _dqm   = dqm;
-        _clk   = clk;
-        _cke   = cke;
-        _ras_n = ras_n;
-        _cas_n = cas_n;
-        _we_n  = we_n;
-    endfunction
+    wire [15:0]   data_in;
+    wire [15:0]   data_out;
+    pocket::dir_e dir;
+    wire [12:0]   a;
+    wire [1:0]    ba;
+    wire [1:0]    dqm;
+    wire          clk;
+    wire          cke;
+    wire          ras_n;
+    wire          cas_n;
+    wire          we_n;
 
     function automatic tie_off();
-        a     = '0;
-        ba    = '0;
-        dq    = 'Z;
-        dqm   = '0;
-        clk   = '0;
-        cke   = '0;
-        ras_n = '1;
-        cas_n = '1;
-        we_n  = '1;
+        a        = '0;
+        ba       = '0;
+        dir      = pocket::DIR_IN;
+        data_out = 'Z;
+        dqm      = '0;
+        clk      = '0;
+        cke      = '0;
+        ras_n    = '1;
+        cas_n    = '1;
+        we_n     = '1;
     endfunction
 
 endinterface
+
+module dram_connect(
+
+    output  wire    [12:0]  dram_a,
+    output  wire    [1:0]   dram_ba,
+    inout   wire    [15:0]  dram_dq,
+    output  wire    [1:0]   dram_dqm,
+    output  wire            dram_clk,
+    output  wire            dram_cke,
+    output  wire            dram_ras_n,
+    output  wire            dram_cas_n,
+    output  wire            dram_we_n,
+
+    dram_if                 dram
+);
+
+    tristate_buffer #(
+        .lo_index   (0),
+        .hi_index   (15)
+    ) tb (
+        .port       (dram_dq),
+        .data_in    (dram.data_in),
+        .data_out   (dram.data_out),
+        .dir        (dram.dir)
+    );
+
+    always_comb begin
+        dram_a     = dram.a;
+        dram_ba    = dram.ba;
+        dram_dqm   = dram.dqm;
+        dram_clk   = dram.clk;
+        dram_cke   = dram.cke;
+        dram_ras_n = dram.ras_n;
+        dram_cas_n = dram.cas_n;
+        dram_we_n  = dram.we_n;
+    end
+
+endmodule
