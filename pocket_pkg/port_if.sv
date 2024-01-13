@@ -12,29 +12,48 @@ interface port_if #(
     parameter int lo_index = 0
 ) ();
     // select the direction and wire all the input/outputs up
-    logic                            dir_to_port;
+    pocket::dir_e                   dir;
 
-    // when FROM_PORT, from_cart has the data, to_port is 'z
-    logic [hi_index:lo_index]        from_port;
+    // data out FROM the port
+    wire [hi_index:lo_index]        data_out;
 
-    // when TO_PORT, the to_port data is sent to the port and
-    // to from_port
-    logic [hi_index:lo_index]        to_port;
+    // data IN TO the port
+    wire [hi_index:lo_index]        data_in;
 
-    function automatic connect(ref logic [hi_index:lo_index] port_inout, ref logic port_dir);
-        port_dir   = dir_to_port;
-        from_port  = port_inout;
-        port_inout = dir_to_port ? to_port : 'z;
+    function automatic tie_off_in();
+        dir      = pocket::DIR_IN;
+        data_out = 'x;
     endfunction
 
-    function automatic tie_off_from_port();
-        dir_to_port = '0;
-        to_port     = 'x;
-    endfunction
-
-    function automatic tie_off_to_port(logic[hi_index:lo_index] value);
-        dir_to_port = 1'b1;
-        to_port     = value;
+    function automatic tie_off_out(logic[hi_index:lo_index] value);
+        dir      = pocket::DIR_OUT;
+        data_out = value;
     endfunction
 
 endinterface
+
+module port_connect #(
+    parameter int hi_index = 7,
+    parameter int lo_index = 0
+) (
+    inout wire [hi_index:lo_index] port_data,
+    output wire                    port_dir,
+
+    port_if                        port
+);
+
+    tristate_buffer #(
+        .hi_index(hi_index),
+        .lo_index(lo_index)
+    ) tb (
+        .port     (port_data),
+        .data_in  (port.data_in),
+        .data_out (port.data_out),
+        .dir      (port.dir)
+    );
+
+    always_comb begin
+        port_dir = port.dir;
+    end
+
+endmodule

@@ -57,7 +57,8 @@ module cram_connect(
     always_comb dir = oe_n ? pocket::DIR_IN : pocket::DIR_OUT;
 
     tristate_buffer #(
-        .WIDTH (16)
+        .hi_index  (15),
+        .lo_index  (0)
     ) ts (
         .port      (dq),
         .data_in   (cram.data_in),

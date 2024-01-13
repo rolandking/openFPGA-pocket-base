@@ -1,17 +1,18 @@
 `timescale 1ns/1ps
 
 module tristate_buffer #(
-    parameter int WIDTH = 1
+    parameter int hi_index = 0,
+    parameter int lo_index = 0
 ) (
-    inout wire [WIDTH-1:0] port,
-    inout wire [WIDTH-1:0] data_in,
-    input wire [WIDTH-1:0] data_out,
-    input pocket::dir_e    dir
+    inout wire [hi_index:lo_index] port,
+    inout wire [hi_index:lo_index] data_in,
+    input wire [hi_index:lo_index] data_out,
+    input pocket::dir_e            dir
 );
 
     genvar i;
     generate
-        for(i = 0 ; i < 16 ; i++) begin : gen_tran
+        for(i = lo_index ; i <= hi_index ; i++) begin : gen_tran
             tran (port[i], data_in[i]);
         end
     endgenerate
