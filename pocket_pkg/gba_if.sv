@@ -2,56 +2,30 @@
 
  interface gba_if;
 
-    logic            si_from_gba;
-    logic            si_to_gba;
-    logic            si_is_to_gba;
-    logic            so_from_gba;
-    logic            so_to_gba;
-    logic            so_is_to_gba;
-    logic            sck_from_gba;
-    logic            sck_to_gba;
-    logic            sck_is_to_gba;
-    logic            sd_from_gba;
-    logic            sd_to_gba;
-    logic            sd_is_to_gba;
-
-    // connect to top-level logic
-    function automatic connect(
-        ref logic port_si,
-        ref logic port_si_dir,
-        ref logic port_so,
-        ref logic port_so_dir,
-        ref logic port_sck,
-        ref logic port_sck_dir,
-        ref logic port_sd,
-        ref logic port_sd_dir
-    );
-        port_si       = si_is_to_gba  ? si_to_gba  : 'z;
-        si_from_gba   = port_si;
-        port_si_dir   = si_is_to_gba;
-        port_so       = so_is_to_gba  ? so_to_gba  : 'z;
-        so_from_gba   = port_so;
-        port_so_dir   = so_is_to_gba;
-        port_sck      = sck_is_to_gba ? sck_to_gba : 'z;
-        sck_from_gba  = port_sck;
-        port_sck_dir  = sck_is_to_gba;
-        port_sd       = sd_is_to_gba  ? sd_to_gba  : 'z;
-        sd_from_gba   = port_sd;
-        port_sd_dir   = sd_is_to_gba;
-
-    endfunction
+    wire             si_data_in;
+    wire             si_data_out;
+    pocket::dir_e    si_dir;
+    wire             so_data_in;
+    wire             so_data_out;
+    pocket::dir_e    so_dir;
+    wire             sck_data_in;
+    wire             sck_data_out;
+    pocket::dir_e    sck_dir;
+    wire             sd_data_in;
+    wire             sd_data_out;
+    pocket::dir_e    sd_dir;
 
     // all inputs and the output lines set so setting them will cause a
     // multiple driven net error
     function automatic tie_off();
-        si_is_to_gba  = 1'b0;
-        si_to_gba     = 'x;
-        so_is_to_gba  = 1'b0;
-        so_to_gba     = 'x;
-        sck_is_to_gba = 1'b0;
-        sck_to_gba    = 'x;
-        sd_is_to_gba  = 1'b0;
-        sd_to_gba     = 'x;
+        si_dir       = pocket::DIR_IN;
+        si_data_out  = 'x;
+        so_dir       = pocket::DIR_IN;
+        so_data_out  = 'x;
+        sck_dir      = pocket::DIR_IN;
+        sck_data_out = 'x;
+        sd_dir       = pocket::DIR_IN;
+        sd_data_out  = 'x;
     endfunction
 
     // si is input, so is output, sck is left
@@ -61,11 +35,65 @@
     // sck_is_to_gba reading or writing sck_from_gba
     // and sck_to_gba
     function automatic set_gba_mode();
-        si_is_to_gba  = 1'b0;
-        sd_to_gba     = 'x;
-        so_is_to_gba  = 1'b1;
-        sd_is_to_gba  = 1'b0;
-        sd_to_gba     = 'x;
+        si_dir        = pocket::DIR_IN;
+        si_data_out   = 'x;
+        so_dir        = pocket::DIR_OUT;
+        sd_dir        = pocket::DIR_IN;
+        sd_data_out   = 'x;
     endfunction
 
  endinterface
+
+ module gba_connect(
+    inout wire port_si,
+    inout wire port_si_dir,
+    inout wire port_so,
+    inout wire port_so_dir,
+    inout wire port_sck,
+    inout wire port_sck_dir,
+    inout wire port_sd,
+    inout wire port_sd_dir,
+
+    gba_if     gba
+ );
+    tristate_buffer #(
+        .lo_index   (0),
+        .hi_index   (0)
+    ) si_tb (
+        .port       (port_si),
+        .dir        (pocket::dir_e'(port_si_dir)),
+        .data_in    (gba.si_data_in),
+        .data_out   (gba.si_data_out)
+    );
+
+    tristate_buffer #(
+        .lo_index   (0),
+        .hi_index   (0)
+    ) so_tb (
+        .port       (port_so),
+        .dir        (pocket::dir_e'(port_so_dir)),
+        .data_in    (gba.so_data_in),
+        .data_out   (gba.so_data_out)
+    );
+
+    tristate_buffer #(
+        .lo_index   (0),
+        .hi_index   (0)
+    ) sck_tb (
+        .port       (port_sck),
+        .dir        (pocket::dir_e'(port_sck_dir)),
+        .data_in    (gba.sck_data_in),
+        .data_out   (gba.sck_data_out)
+    );
+
+    tristate_buffer #(
+        .lo_index   (0),
+        .hi_index   (0)
+    ) sd_tb (
+        .port       (port_sd),
+        .dir        (pocket::dir_e'(port_sd_dir)),
+        .data_in    (gba.sd_data_in),
+        .data_out   (gba.sd_data_out)
+    );
+
+ endmodule
