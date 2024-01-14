@@ -30,8 +30,8 @@
 
 endmodule
 
- `define BRIDGE_CONNECT_TREE_LEAF_NO_READ(_T,_L) \
-    always_comb begin                                      \
+ `define BRIDGE_CONNECT_TREE_LEAF_NO_READ(_T,_L)    \
+    always_comb begin                               \
         _L.addr          = _T.addr;                 \
         _L.wr_data       = _T.wr_data;              \
         _L.wr            = _T.wr;                   \
