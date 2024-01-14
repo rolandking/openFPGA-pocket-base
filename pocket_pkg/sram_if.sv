@@ -2,29 +2,19 @@
 
 interface sram_if;
 
-    logic [16:0] a;
-    logic [15:0] data_from_ram;
-    logic [15:0] data_to_ram;
-    logic        oe_n;
-    logic        we_n;
-    logic        ub_n;
-    logic        lb_n;
-
-    function automatic connect(
-        ref logic [16:0] _a,
-        ref logic [15:0] _dq,
-        ref logic        _oe_n,
-        ref logic        _we_n,
-        ref logic        _ub_n,
-        ref logic        _lb_n
-    );
-        _dq           = we_n ? 'Z : data_to_ram;
-        data_from_ram = _dq;
-    endfunction
+    wire [15:0]   data_in;
+    wire [15:0]   data_out;
+    pocket::dir_e dir;
+    wire [16:0]   a;
+    wire          oe_n;
+    wire          we_n;
+    wire          ub_n;
+    wire          lb_n;
 
     function automatic tie_off();
         a           = '0;
-        data_to_ram = 'x;
+        data_out    = 'x;
+        dir         = pocket::DIR_IN;
         oe_n        = '1;
         we_n        = '1;
         ub_n        = '1;
@@ -32,3 +22,34 @@ interface sram_if;
     endfunction
 
 endinterface
+
+module sram_connect (
+    output  wire [16:0]  a,
+    inout   wire [15:0]  dq,
+    output  wire         oe_n,
+    output  wire         we_n,
+    output  wire         ub_n,
+    output  wire         lb_n,
+
+    sram_if              sram
+);
+
+    tristate_buffer #(
+        .lo_index   (0),
+        .hi_index   (15)
+    ) (
+        .port       (dq),
+        .data_in    (sram.data_in),
+        .data_out   (sram.data_out),
+        .dir        (sram.dir)
+    );
+
+    always_comb begin
+        a    = sram.a;
+        oe_n = sram.oe_n;
+        we_n = sram.we_n;
+        ub_n = sram.ub_n;
+        lb_n = sram.lb_n;
+    end
+
+endmodule

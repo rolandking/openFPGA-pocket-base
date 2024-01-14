@@ -35,15 +35,15 @@ endinterface
 
 module dram_connect(
 
-    output  wire    [12:0]  dram_a,
-    output  wire    [1:0]   dram_ba,
-    inout   wire    [15:0]  dram_dq,
-    output  wire    [1:0]   dram_dqm,
-    output  wire            dram_clk,
-    output  wire            dram_cke,
-    output  wire            dram_ras_n,
-    output  wire            dram_cas_n,
-    output  wire            dram_we_n,
+    output  wire    [12:0]  a,
+    output  wire    [1:0]   ba,
+    inout   wire    [15:0]  dq,
+    output  wire    [1:0]   dqm,
+    output  wire            clk,
+    output  wire            cke,
+    output  wire            ras_n,
+    output  wire            cas_n,
+    output  wire            we_n,
 
     dram_if                 dram
 );
@@ -52,21 +52,21 @@ module dram_connect(
         .lo_index   (0),
         .hi_index   (15)
     ) tb (
-        .port       (dram_dq),
+        .port       (dq),
         .data_in    (dram.data_in),
         .data_out   (dram.data_out),
         .dir        (dram.dir)
     );
 
     always_comb begin
-        dram_a     = dram.a;
-        dram_ba    = dram.ba;
-        dram_dqm   = dram.dqm;
-        dram_clk   = dram.clk;
-        dram_cke   = dram.cke;
-        dram_ras_n = dram.ras_n;
-        dram_cas_n = dram.cas_n;
-        dram_we_n  = dram.we_n;
+        a     = dram.a;
+        ba    = dram.ba;
+        dqm   = dram.dqm;
+        clk   = dram.clk;
+        cke   = dram.cke;
+        ras_n = dram.ras_n;
+        cas_n = dram.cas_n;
+        we_n  = dram.we_n;
     end
 
 endmodule

@@ -45,14 +45,14 @@
  endinterface
 
  module gba_connect(
-    inout wire port_si,
-    inout wire port_si_dir,
-    inout wire port_so,
-    inout wire port_so_dir,
-    inout wire port_sck,
-    inout wire port_sck_dir,
-    inout wire port_sd,
-    inout wire port_sd_dir,
+    inout  wire port_si,
+    output wire port_si_dir,
+    inout  wire port_so,
+    output wire port_so_dir,
+    inout  wire port_sck,
+    output wire port_sck_dir,
+    inout  wire port_sd,
+    output wire port_sd_dir,
 
     gba_if     gba
  );
@@ -61,7 +61,7 @@
         .hi_index   (0)
     ) si_tb (
         .port       (port_si),
-        .dir        (pocket::dir_e'(port_si_dir)),
+        .dir        (gba.si_dir),
         .data_in    (gba.si_data_in),
         .data_out   (gba.si_data_out)
     );
@@ -71,7 +71,7 @@
         .hi_index   (0)
     ) so_tb (
         .port       (port_so),
-        .dir        (pocket::dir_e'(port_so_dir)),
+        .dir        (gba.so_dir),
         .data_in    (gba.so_data_in),
         .data_out   (gba.so_data_out)
     );
@@ -81,7 +81,7 @@
         .hi_index   (0)
     ) sck_tb (
         .port       (port_sck),
-        .dir        (pocket::dir_e'(port_sck_dir)),
+        .dir        (gba.sck_dir),
         .data_in    (gba.sck_data_in),
         .data_out   (gba.sck_data_out)
     );
@@ -91,9 +91,16 @@
         .hi_index   (0)
     ) sd_tb (
         .port       (port_sd),
-        .dir        (pocket::dir_e'(port_sd_dir)),
+        .dir        (gba.sd_dir),
         .data_in    (gba.sd_data_in),
         .data_out   (gba.sd_data_out)
     );
+
+    always_comb begin
+        port_si_dir  = gba.si_dir;
+        port_so_dir  = gba.so_dir;
+        port_sck_dir = gba.sck_dir;
+        port_sd_dir  = gba.sd_dir;
+    end
 
  endmodule

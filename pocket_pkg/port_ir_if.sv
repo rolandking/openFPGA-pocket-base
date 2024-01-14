@@ -1,15 +1,8 @@
- interface port_ir_if;
+ interface ir_if;
 
-    logic            tx;
-    logic            rx;
-    logic            rx_disable;
-
-    // connect to top-level logic
-    function automatic connect(ref logic _tx, ref logic _rx, ref logic _rx_disable);
-        _tx = tx;
-        _rx_disable = rx_disable;
-        rx = _rx;
-    endfunction
+    wire tx;
+    wire rx;
+    wire rx_disable;
 
     // not using the IR port, so turn off both the LED, and
     // disable the receive circuit to save power
@@ -19,3 +12,19 @@
     endfunction
 
  endinterface
+
+ module ir_connect(
+    output wire tx,
+    output wire rx_disable,
+    input  wire rx,
+
+    ir_if       ir
+ );
+
+    always_comb begin
+        tx         = ir.tx;
+        rx_disable = ir.rx_disable;
+        ir.rx      = rx;
+    end
+
+ endmodule
