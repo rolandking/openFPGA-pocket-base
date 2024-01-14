@@ -10,34 +10,6 @@ interface video_if;
     logic         vs;
     logic         hs;
 
-    function automatic connect (
-        ref logic             _rgb_clock,
-        ref logic             _rgb_clock_90,
-        ref pocket::rgb_t     _rgb,
-        ref logic             _de,
-        ref logic             _skip,
-        ref logic             _vs,
-        ref logic             _hs
-    );
-        _rgb_clock    = rgb_clock;
-        _rgb_clock_90 = rgb_clock_90;
-        _rgb          = rgb;
-        _de           = de;
-        _skip         = skip;
-        _vs           = vs;
-        _hs           = hs;
-
-    endfunction
-
-    /*
-     * 74mhz / 4 / 50Hz = 370,000
-     * = 740 * 500
-     *
-     * make the display 400 x 360
-     * put HS at 50, VS at (0,50)
-     * DE = (HS >= 100 & HS < 500) & (VS >= 100 && VS < 460)
-     */
-
     function automatic tie_off();
         rgb_clock    = '0;
         rgb_clock_90 = '0;
@@ -48,6 +20,38 @@ interface video_if;
     endfunction
 
 endinterface
+
+module video_connect (
+    output wire          rgb_clock,
+    output wire          rgb_clock_90,
+    output pocket::rgb_t rgb,
+    output wire          de,
+    output wire          skip,
+    output wire          vs,
+    output wire          hs,
+
+    video_if        video
+);
+    always_comb begin
+        rgb_clock    = video.rgb_clock;
+        rgb_clock_90 = video.rgb_clock_90;
+        rgb          = video.rgb;
+        de           = video.de;
+        skip         = video.skip;
+        vs           = video.vs;
+        hs           = video.hs;
+    end
+
+endmodule
+
+/*
+ *   74mhz / 4 / 50Hz = 370,000
+ *   = 740 * 500
+ *
+ *   make the display 400 x 360
+ *   put HS at 50, VS at (0,50)
+ *   DE = (HS >= 100 & HS < 500) & (VS >= 100 && VS < 460)
+ */
 
 module video_dummy(
     input wire video_rgb_clk,

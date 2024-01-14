@@ -37,7 +37,7 @@ module sram_connect (
     tristate_buffer #(
         .lo_index   (0),
         .hi_index   (15)
-    ) (
+    ) src_tb (
         .port       (dq),
         .data_in    (sram.data_in),
         .data_out   (sram.data_out),

@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 
-`define Ceil(ParamName, Expression) \
+`define CEIL(ParamName, Expression) \
  localparam ParamName``_F = Expression;\
  localparam integer ParamName``_R = ParamName``_F;\
  localparam integer ParamName = (ParamName``_R == ParamName``_F || ParamName``_R > ParamName``_F) ? ParamName``_R : (ParamName``_R + 1);
@@ -38,7 +38,7 @@ module psram#(
     localparam real CYCLE_NANOS = 1000000000 / CLK_FREQ;
 
 //    localparam int N1 = $rtoi($ceil(RAM_CYCLE_NANOS / CYCLE_NANOS));
-    `Ceil(N1, (RAM_CYCLE_NANOS / CYCLE_NANOS))
+    `CEIL(N1, (RAM_CYCLE_NANOS / CYCLE_NANOS))
     localparam int N  = (N1 < 3) ? 3 : N1;
 
     localparam int COUNTER_BITS = $clog2(N);

@@ -9,35 +9,6 @@
     pocket::bridge_data_t rd_data;
     logic                 rd;
 
-    function automatic connect(
-        ref pocket::bridge_addr_t _addr,
-        ref pocket::bridge_data_t _wr_data,
-        ref logic                 _wr,
-        ref pocket::bridge_data_t _rd_data,
-        ref logic                 _rd
-    );
-        addr     = _addr;
-        wr_data  = _wr_data;
-        wr       = _wr;
-        rd       = _rd;
-        _rd_data = rd_data;
-    endfunction
-
-    // explode the bridge_if back into individual signals
-    function automatic explode(
-        ref pocket::bridge_addr_t _addr,
-        ref pocket::bridge_data_t _wr_data,
-        ref logic                 _wr,
-        ref pocket::bridge_data_t _rd_data,
-        ref logic                 _rd
-    );
-        _addr     = addr;
-        _wr_data  = wr_data;
-        _wr       = wr;
-        _rd       = rd;
-        rd_data   = _rd_data;
-    endfunction
-
  endinterface
 
  module bridge_connect(
