@@ -89,10 +89,8 @@ module bridge_driver(
 
     // reads - just take the address and put the right data on the bus
     always_ff @(posedge bridge.clk) begin
-        host_cmd_write        <= '0;
         host_cmd_status_read  <= '0;
         core_cmd_read         <= '0;
-        core_cmd_status_write <= '0;
 
         case(bridge.addr[26:0])
             27'h0000000: begin
@@ -128,20 +126,138 @@ module bridge_driver(
                 rd_data <= host_cmd_response[3];
             end
             CORE_PARAMETER_OFFSET[26:0] + 27'h0: begin
-                rd_data <= core_cmd_response[0];
+                rd_data <= core_cmd_params[0];
             end
             CORE_PARAMETER_OFFSET[26:0] + 27'h4: begin
-                rd_data <= core_cmd_response[1];
+                rd_data <= core_cmd_params[1];
             end
             CORE_PARAMETER_OFFSET[26:0] + 27'h8: begin
-                rd_data <= core_cmd_response[2];
+                rd_data <= core_cmd_params[2];
             end
             CORE_PARAMETER_OFFSET[26:0] + 27'hc: begin
-                rd_data <= core_cmd_response[3];
+                rd_data <= core_cmd_params[3];
             end
 
             default: begin
                 rd_data <= '1;
+            end
+        endcase
+    end
+
+    always_ff @(posedge bridge.clk) begin
+
+        host_cmd_write        <= '0;
+        core_cmd_status_write <= '0;
+
+        if(bridge.wr) begin
+            case(bridge.addr[26:0])
+                27'h0000000: begin
+                    host_cmd       <= bridge.wr_data;
+                    host_cmd_write <= '1;
+                end
+                27'h0001000: begin
+                    core_cmd_status       <= bridge.wr_data;
+                    core_cmd_status_write <= '1;
+                end
+                HOST_PARAMETER_OFFSET[26:0] + 27'h0: begin
+                    host_cmd_params[0] <= bridge.wr_data;
+                end
+                HOST_PARAMETER_OFFSET[26:0] + 27'h4: begin
+                    host_cmd_params[1] <= bridge.wr_data;
+                end
+                HOST_PARAMETER_OFFSET[26:0] + 27'h8: begin
+                    host_cmd_params[2] <= bridge.wr_data;
+                end
+                HOST_PARAMETER_OFFSET[26:0] + 27'hc: begin
+                    host_cmd_params[3] <= bridge.wr_data;
+                end
+                CORE_RESPONSE_OFFSET[26:0] + 27'h0: begin
+                    core_cmd_response[0] <= bridge.wr_data;
+                end
+                CORE_RESPONSE_OFFSET[26:0] + 27'h4: begin
+                    core_cmd_response[1] <= bridge.wr_data;
+                end
+                CORE_RESPONSE_OFFSET[26:0] + 27'h8: begin
+                    core_cmd_response[2] <= bridge.wr_data;
+                end
+                CORE_RESPONSE_OFFSET[26:0] + 27'hc: begin
+                    core_cmd_response[3] <= bridge.wr_data;
+                end
+
+                default: begin
+                end
+            endcase
+        end
+    end
+
+    // command processing
+    //
+    // command starts when there is a write to host_cmd and that has
+    // CM + command in it. That moves to the valid state where valid is
+    // asserted and BU with no progress is output.
+    // when ACKed it moves to the ACKed state where BU + progress is output
+    // as soon as done is asserted the final result is output and returns to
+    // idle.
+
+    typedef enum logic[1:0] {
+        CMD_STATE_IDLE  = 2'b00,
+        CMD_STATE_VALID = 2'b01,
+        CMD_STATE_ACKED = 2'b10,
+        CMD_STATE_DONE  = 2'b11
+    } cmd_state_e;
+
+    cmd_state_e cmd_state = CMD_STATE_IDLE;
+
+    always_comb begin
+        cmd.valid = '0;
+        cmd.done  = '0;
+
+        case(cmd_state)
+            CMD_STATE_IDLE:begin
+            end
+            CMD_STATE_VALID:begin
+                cmd.valid = '1;
+            end
+            CMD_STATE_ACKED: begin
+            end
+            CMD_STATE_DONE:begin
+            end
+            default: begin
+            end
+        endcase
+    end
+
+    always_ff @(posedge bridge.clk) begin
+
+        case(cmd_state)
+            CMD_STATE_IDLE: begin
+                if(host_cmd_write && host_cmd[31:16] == "CM") begin
+                    cmd_state       <= CMD_STATE_VALID;
+                    cmd.word        <= host_cmd[15:0];
+                    cmd.param       <= host_cmd_params;
+                    host_cmd_status <= {"BU", 16'd0};
+                end
+            end
+
+            CMD_STATE_VALID,
+            CMD_STATE_ACKED:begin
+                host_cmd_status <= {"BU", cmd.progress};
+                if(cmd.ack) begin
+                    cmd_state <= CMD_STATE_ACKED;
+                end
+
+                if(cmd.done) begin
+                    host_cmd_status   <= {"OK", cmd.result};
+                    host_cmd_response <= cmd.response;
+                    cmd_state         <= CMD_STATE_DONE;
+                end
+            end
+
+            CMD_STATE_DONE:begin
+                cmd_state <= CMD_STATE_IDLE;
+            end
+
+            default: begin
             end
         endcase
     end
