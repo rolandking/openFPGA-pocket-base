@@ -68,10 +68,10 @@ module bridge_master #(
         if(bridge_in.wr || bridge_in.rd) begin
             addr_ff     <= bridge_in.addr;
             wr_data_ff  <= bridge_in.wr_data;
-            selected_ff <= selected;
         end
-        rd_ff <= bridge_in.rd;
-        wr_ff <= bridge_in.wr;
+        rd_ff       <= bridge_in.rd;
+        wr_ff       <= bridge_in.wr;
+        selected_ff <= selected;
      end
 
      always_comb begin
@@ -94,7 +94,7 @@ module bridge_master #(
      endgenerate
 
      always_comb begin
-        bridge_in.rd_data = 'x;
+        bridge_in.rd_data = '1;
         for( int i = 0 ; i < NUM_LEAVES ; i++ ) begin
             if(selected_ff[i]) begin
                 bridge_in.rd_data = rd_data[i];

@@ -1,73 +1,74 @@
-// MIT License
-
-// Copyright (c) 2022 Eric Lewis
-
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
-//
-////////////////////////////////////////////////////////////////////////////////
-
 // Module for Developer Debug Key provided by Analogue.
 //
 // The LED uses the equivalent of the GBA /RD pin as an output
 // The button uses the equivalent of the AD0 pin as an input.
-// Both are not really implementation details you need to worry about.
 //
 // Note: you will need to enable the cart power in your core.json for this to work.
 //
+
+interface debug_key_if;
+    wire led;
+    wire button;
+    wire uart_tx;
+    wire uart_rx;
+
+    function automatic tie_off();
+        led     = '0;
+        uart_tx = '0;
+    endfunction
+
+endinterface
+
 module debug_key(
-    output  wire       cart_tran_bank0_dir,
-    output  wire [7:4] cart_tran_bank0,
+    port_if                 port_cart_tran_bank0,
+    port_if                 port_cart_tran_bank3,
+    port_if                 port_cart_tran_pin31,
 
-    output  wire       cart_tran_bank3_dir,
-    input   wire [7:0] cart_tran_bank3,
-
-    output  wire       cart_tran_pin31_dir,
-    input   wire       cart_tran_pin31,
-
-    input   wire       led,
-    output  wire       button,
-    input   wire       uart_tx,
-    output  wire       uart_rx
+    debug_key_if            debug_key
 );
 
 always_comb begin
-    cart_tran_bank0     = '0;
+    // Enable port0 output.
+    // UART TX and LED use this bank.
+    port_cart_tran_bank0.dir           = pocket::DIR_OUT;
+    port_cart_tran_bank0.data_out[7]   = '0;
+    // 6-5 are outputs
+    port_cart_tran_bank0.data_out[4]   = '0;
 
-    // Enable bus output.
-    // Note: UART uses this bank.
-    cart_tran_bank0_dir = 1'b1;
+    // port3 and pin31 are button in and uart RX
+    // so set them to input
+    port_cart_tran_bank3.dir         = pocket::DIR_IN;
+    port_cart_tran_pin31.dir         = pocket::DIR_IN;
 
-    // Enable bus input.
-    cart_tran_bank3_dir = 1'b0;
-    cart_tran_pin31_dir = 1'b0;
-
-    // Pin 4 is LED.
-    cart_tran_bank0[5]  = led;
-
-    // Pin 6 is button, we invert since button is always high.
-    button              = ~cart_tran_bank3[0];
-
-    // Pin 3 is UART output
-    cart_tran_bank0[6]  = uart_tx;
-
-    // Pin 31 is UART input
-    uart_rx             = cart_tran_pin31;
+    // button input on port3, inverted, the inversion means we can assign
+    // without getting a bidirectional warning
+    debug_key.button                 = ~port_cart_tran_bank3.data_in[0];
 end
+
+    // as these are interface elements they are bidir so just assigning
+    // causes a warning. tran() them
+
+    // outputs on port0
+    // Pin 4 is LED.
+    tran(port_cart_tran_bank0.data_out[5], debug_key.led                  );
+    tran(port_cart_tran_bank0.data_out[6], debug_key.uart_tx              );
+    // uart RX on pin31
+    tran(debug_key.uart_rx               , port_cart_tran_pin31.data_in[0]);
+
+endmodule
+
+// connect the uart to the debug key and tie off the reset of the
+// debug key pins
+module debug_key_uart_connect#(
+    parameter logic led = 1'b0
+)(
+    debug_key_if debug_key,
+    uart_if      uart
+);
+    always_comb begin
+        debug_key.uart_tx = uart.tx;
+        uart.rx           = debug_key.uart_rx;
+        debug_key.led     = led;
+    end
 
 endmodule

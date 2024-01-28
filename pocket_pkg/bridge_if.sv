@@ -38,11 +38,11 @@ endmodule
         _L.rd            = _T.rd;                   \
     end
 
- `define BRIDGE_CONNECT_TREE_LEAF_READ(_T,_L)    \
-    always_comb begin                                      \
+ `define BRIDGE_CONNECT_TREE_LEAF_READ(_T,_L)       \
+    always_comb begin                               \
         _T.rd_data = _L.rd_data;                    \
     end
 
- `define BRIDGE_CONNECT_TREE_LEAF(_T,_L)         \
-    `BRIDGE_CONNECT_TREE_LEAF_NO_READ(_T,_L)     \
+ `define BRIDGE_CONNECT_TREE_LEAF(_T,_L)            \
+    `BRIDGE_CONNECT_TREE_LEAF_NO_READ(_T,_L)        \
     `BRIDGE_CONNECT_TREE_LEAF_READ(_T,_L)
