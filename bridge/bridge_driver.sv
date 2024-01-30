@@ -43,13 +43,13 @@ interface bridge_driver_if;
     bridge_word_t  result;
     bridge_param_t response;
 
-    function automatic tie_off_master();
+    function automatic tie_off_req();
         valid = 1'b0;
         word  = 'x;
         param = 'x;
     endfunction
 
-    function automatic tie_off_client();
+    function automatic tie_off_cmd();
         progress = '0;
         done     = '1;
         result   = '0;
@@ -66,13 +66,16 @@ module bridge_driver(
     bridge_if           bridge,
     input logic         bridge_endian_little,
     bridge_driver_if    cmd,
-    bridge_driver_if    request
+    bridge_driver_if    req
 );
-    parameter logic [31:0] BASE_ADDRESS          = 32'hf8000000;
-    parameter logic [26:0] HOST_PARAMETER_OFFSET = 32'h00010000;
-    parameter logic [26:0] HOST_RESPONSE_OFFSET  = 32'h00010010;
-    parameter logic [26:0] CORE_PARAMETER_OFFSET = 32'h00010020;
-    parameter logic [26:0] CORE_RESPONSE_OFFSET  = 32'h00010030;
+    // the RESPONSE and PARAMETER offsets, despite the documentation
+    // seem to be offsets from the host and core command register at
+    // 0xf8000000 and 0xf8001000 and not absolute addresses anywhere
+    // in bridge space
+    parameter logic [31:0] PARAMETER_OFFSET      = 32'h00000020;
+    parameter logic [31:0] RESPONSE_OFFSET       = 32'h00000040;
+    parameter logic [31:0] HOST_BASE             = 32'hf8000000;
+    parameter logic [31:0] CORE_BASE             = 32'hf8001000;
 
     // the data returned to the bridge
     pocket::bridge_data_t rd_data;
@@ -83,54 +86,56 @@ module bridge_driver(
     logic               core_cmd_read,  core_cmd_status_write;
     logic               host_cmd_write, host_cmd_status_read;
 
+    always_comb bridge.rd_data = rd_data;
+
     // reads - just take the address and put the right data on the bus
     always_ff @(posedge bridge.clk) begin
         host_cmd_status_read  <= '0;
         core_cmd_read         <= '0;
 
         case(bridge.addr[26:0])
-            27'h0000000: begin
+            HOST_BASE[26:0] + 27'h0000000: begin
                 rd_data              <= host_cmd_status;
                 host_cmd_status_read <= bridge.rd;
             end
-            27'h0000004: begin
-                rd_data <= HOST_PARAMETER_OFFSET;
+            HOST_BASE[26:0] + 27'h0000004: begin
+                rd_data <= PARAMETER_OFFSET;
             end
-            27'h0000008: begin
-                rd_data <= HOST_RESPONSE_OFFSET;
+            HOST_BASE[26:0] + 27'h0000008: begin
+                rd_data <= RESPONSE_OFFSET;
             end
-            27'h0001000: begin
+            CORE_BASE[26:0] + 27'h0000000: begin
                 rd_data       <= core_cmd;
                 core_cmd_read <= bridge.rd;
             end
-            27'h0001004: begin
-                rd_data <= CORE_PARAMETER_OFFSET;
+            CORE_BASE[26:0] + 27'h0000004: begin
+                rd_data <= PARAMETER_OFFSET;
             end
-            27'h0001008: begin
-                rd_data <= CORE_RESPONSE_OFFSET;
+            CORE_BASE[26:0] + 27'h0000008: begin
+                rd_data <= RESPONSE_OFFSET;
             end
-            HOST_RESPONSE_OFFSET[26:0] + 27'h0: begin
+            HOST_BASE[26:0] + RESPONSE_OFFSET[26:0] + 27'h0: begin
                 rd_data <= host_cmd_response[0];
             end
-            HOST_RESPONSE_OFFSET[26:0] + 27'h4: begin
+            HOST_BASE[26:0] + RESPONSE_OFFSET[26:0] + 27'h4: begin
                 rd_data <= host_cmd_response[1];
             end
-            HOST_RESPONSE_OFFSET[26:0] + 27'h8: begin
+            HOST_BASE[26:0] + RESPONSE_OFFSET[26:0] + 27'h8: begin
                 rd_data <= host_cmd_response[2];
             end
-            HOST_RESPONSE_OFFSET[26:0] + 27'hc: begin
+            HOST_BASE[26:0] + RESPONSE_OFFSET[26:0] + 27'hc: begin
                 rd_data <= host_cmd_response[3];
             end
-            CORE_PARAMETER_OFFSET[26:0] + 27'h0: begin
+            CORE_BASE[26:0] + PARAMETER_OFFSET[26:0] + 27'h0: begin
                 rd_data <= core_cmd_param[0];
             end
-            CORE_PARAMETER_OFFSET[26:0] + 27'h4: begin
+            CORE_BASE[26:0] + PARAMETER_OFFSET[26:0] + 27'h4: begin
                 rd_data <= core_cmd_param[1];
             end
-            CORE_PARAMETER_OFFSET[26:0] + 27'h8: begin
+            CORE_BASE[26:0] + PARAMETER_OFFSET[26:0] + 27'h8: begin
                 rd_data <= core_cmd_param[2];
             end
-            CORE_PARAMETER_OFFSET[26:0] + 27'hc: begin
+            CORE_BASE[26:0] + PARAMETER_OFFSET[26:0] + 27'hc: begin
                 rd_data <= core_cmd_param[3];
             end
 
@@ -147,36 +152,36 @@ module bridge_driver(
 
         if(bridge.wr) begin
             case(bridge.addr[26:0])
-                27'h0000000: begin
+                HOST_BASE[26:0] + 27'h0000000: begin
                     host_cmd       <= bridge.wr_data;
                     host_cmd_write <= '1;
                 end
-                27'h0001000: begin
+                CORE_BASE[26:0] + 27'h0000000: begin
                     core_cmd_status       <= bridge.wr_data;
                     core_cmd_status_write <= '1;
                 end
-                HOST_PARAMETER_OFFSET[26:0] + 27'h0: begin
+                HOST_BASE[26:0] + PARAMETER_OFFSET[26:0] + 27'h0: begin
                     host_cmd_param[0] <= bridge.wr_data;
                 end
-                HOST_PARAMETER_OFFSET[26:0] + 27'h4: begin
+                HOST_BASE[26:0] + PARAMETER_OFFSET[26:0] + 27'h4: begin
                     host_cmd_param[1] <= bridge.wr_data;
                 end
-                HOST_PARAMETER_OFFSET[26:0] + 27'h8: begin
+                HOST_BASE[26:0] + PARAMETER_OFFSET[26:0] + 27'h8: begin
                     host_cmd_param[2] <= bridge.wr_data;
                 end
-                HOST_PARAMETER_OFFSET[26:0] + 27'hc: begin
+                HOST_BASE[26:0] + PARAMETER_OFFSET[26:0] + 27'hc: begin
                     host_cmd_param[3] <= bridge.wr_data;
                 end
-                CORE_RESPONSE_OFFSET[26:0] + 27'h0: begin
+                CORE_BASE[26:0] + RESPONSE_OFFSET[26:0] + 27'h0: begin
                     core_cmd_response[0] <= bridge.wr_data;
                 end
-                CORE_RESPONSE_OFFSET[26:0] + 27'h4: begin
+                CORE_BASE[26:0] + RESPONSE_OFFSET[26:0] + 27'h4: begin
                     core_cmd_response[1] <= bridge.wr_data;
                 end
-                CORE_RESPONSE_OFFSET[26:0] + 27'h8: begin
+                CORE_BASE[26:0] + RESPONSE_OFFSET[26:0] + 27'h8: begin
                     core_cmd_response[2] <= bridge.wr_data;
                 end
-                CORE_RESPONSE_OFFSET[26:0] + 27'hc: begin
+                CORE_BASE[26:0] + RESPONSE_OFFSET[26:0] + 27'hc: begin
                     core_cmd_response[3] <= bridge.wr_data;
                 end
 
@@ -204,7 +209,6 @@ module bridge_driver(
 
     always_comb begin
         cmd.valid = '0;
-        cmd.done  = '0;
 
         case(cmd_state)
             CMD_STATE_IDLE:begin
@@ -265,7 +269,7 @@ module bridge_driver(
     req_state_t req_state;
 
     always_comb begin
-        request.done = '0;
+        req.done = '0;
 
         case(req_state)
             REQ_STATE_IDLE: begin
@@ -275,7 +279,7 @@ module bridge_driver(
             REQ_STATE_WAIT_DONE: begin
             end
             REQ_STATE_DONE: begin
-                request.done = '1;
+                req.done = '1;
             end
             default: begin
             end
@@ -285,9 +289,9 @@ module bridge_driver(
     always_ff @(posedge bridge.clk) begin
         case(req_state)
             REQ_STATE_IDLE: begin
-                if(request.valid) begin
-                    core_cmd        <= {"cm", request.word};
-                    core_cmd_param  <= request.param;
+                if(req.valid) begin
+                    core_cmd        <= {"cm", req.word};
+                    core_cmd_param  <= req.param;
                     req_state <= REQ_STATE_WAIT_WRITE_STATUS;
                 end
             end
@@ -301,12 +305,12 @@ module bridge_driver(
 
             REQ_STATE_WAIT_DONE: begin
                 if(core_cmd_status[31:16] == "bu") begin
-                    request.progress <= core_cmd_status[15:0];
+                    req.progress <= core_cmd_status[15:0];
                 end
 
                 if(core_cmd_status[31:16] == "ok") begin
-                    request.status   <= core_cmd_status[15:0];
-                    request.response <= core_cmd_response;
+                    req.progress <= core_cmd_status[15:0];
+                    req.response <= core_cmd_response;
                     req_state        <= REQ_STATE_DONE;
                 end
             end
