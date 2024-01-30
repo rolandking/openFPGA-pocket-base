@@ -1,3 +1,6 @@
 set_global_assignment -name QIP_FILE           [file join $::quartus(qip_path) "../pocket_pkg/pocket_pkg.qip"]
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "bridge_pkg.sv"]
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "bridge_master.sv"]
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "bridge_driver.sv"]
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "bridge_cmd.sv"]
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "bridge_core.sv"]

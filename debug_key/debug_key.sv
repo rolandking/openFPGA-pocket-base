@@ -65,9 +65,9 @@ module debug_key_uart_connect#(
     debug_key_if debug_key,
     uart_if      uart
 );
+    tran(debug_key.uart_tx, uart.tx          );
+    tran(uart.rx,           debug_key.uart_rx);
     always_comb begin
-        debug_key.uart_tx = uart.tx;
-        uart.rx           = debug_key.uart_rx;
         debug_key.led     = led;
     end
 

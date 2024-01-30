@@ -71,4 +71,6 @@ package pocket;
         bridge_addr_t to_addr;
     } bridge_addr_range_t;
 
+    typedef logic [15:0] slot_id_t;
+
  endpackage
