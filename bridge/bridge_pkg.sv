@@ -42,26 +42,30 @@ package bridge_pkg;
         host_request_status_result_running   = 16'h0004
     } host_request_status_result_e;
 
-    /*
-     * default to
-     * - booting until the pll is locked
-     * - setup until the host de-asserts reset_n
-     * - running after that
-     */
     function automatic host_request_status_result_e host_request_status_result_default(
-        logic pll_core_locked,
-        logic reset_n
+        input logic pll_core_locked,
+        input logic reset_n,
+        input logic hold_idle = '0
     );
-        host_request_status_result_default = host_request_status_result_booting;
-        if(pll_core_locked) begin
-            host_request_status_result_default = host_request_status_result_setup;
-        end
-        if(reset_n) begin
-            host_request_status_result_default = host_request_status_result_running;
-        end
+        casex({pll_core_locked, reset_n, hold_idle})
+            3'b0xx: begin
+                return host_request_status_result_booting;
+            end
+            3'b10x: begin
+                return host_request_status_result_setup;
+            end
+            3'b111: begin
+                return host_request_status_result_idle;
+            end
+            3'b110: begin
+                return host_request_status_result_running;
+            end
+            default: begin
+                return host_request_status_result_undefined;
+            end
+        endcase
+
     endfunction
-
-
 
     /////////////////////////////////////////////////////////
     // host_reset_enter

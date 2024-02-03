@@ -137,34 +137,45 @@ module bridge_cmd (
     bridge_pkg::host_notify_docked_state_param_t host_notify_docked_state_param;
     bridge_pkg::host_notify_menu_state_param_t   host_notify_menu_state_param;
 
+    // flatten cmd.param into a one-way signal so we can use it in always_comb
+    // below to expand the params. Just connecting them gives lots of bidirectional
+    // port assigned unidirectionally errors
+    bridge_param_t param;
+    bidir_oneway#(
+        .width($bits(bridge_param_t))
+    ) param_flat(
+        .in      (cmd.param),
+        .out     (param)
+    );
+
     always_comb begin
         host_dataslot_request_read.param  = bridge_pkg::host_dataslot_request_read_param_extract(
-            cmd.param
+            param
         );
         host_dataslot_request_write.param = bridge_pkg::host_dataslot_request_write_param_extract(
-            cmd.param
+            param
         );
         host_dataslot_update.param        = bridge_pkg::host_dataslot_update_param_extract(
-            cmd.param
+            param
         );
         host_rtc_update.param             = bridge_pkg::host_rtc_update_param_extract(
-            cmd.param
+            param
         );
         host_savestate_start_query.param  = bridge_pkg::host_savestate_start_query_param_extract(
-            cmd.param
+            param
         );
         host_savestate_load_query.param   = bridge_pkg::host_savestate_load_query_param_extract(
-            cmd.param
+            param
         );
         host_notify_cartridge.param       = bridge_pkg::host_notify_cartridge_param_extract(
-            cmd.param
+            param
         );
         host_notify_display_mode.param    = bridge_pkg::host_notify_display_mode_param_extract(
-            cmd.param
+            param
         );
 
-        host_notify_menu_state_param     = bridge_pkg::host_notify_menu_state_param_extract(cmd.param);
-        host_notify_docked_state_param   = bridge_pkg::host_notify_docked_state_param_extract(cmd.param);
+        host_notify_menu_state_param      = bridge_pkg::host_notify_menu_state_param_extract(cmd.param);
+        host_notify_docked_state_param    = bridge_pkg::host_notify_docked_state_param_extract(cmd.param);
     end
 
     // one state per type, entering the state sets up the cmd and

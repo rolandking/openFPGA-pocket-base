@@ -22,7 +22,15 @@ module bridge_core(
     output logic                                    in_menu = 0,
     host_notify_cartridge_if                        host_notify_cartridge,
     output logic                                    docked = 0,
-    host_notify_display_mode_if                     host_notify_display_mode
+    host_notify_display_mode_if                     host_notify_display_mode,
+
+    core_ready_to_run_if                            core_ready_to_run,
+    core_debug_event_log_if                         core_debug_event_log,
+    core_dataslot_read_if                           core_dataslot_read,
+    core_dataslot_write_if                          core_dataslot_write,
+    core_dataslot_flush_if                          core_dataslot_flush,
+    core_get_dataslot_filename_if                   core_get_dataslot_filename,
+    core_open_dataslot_file_if                      core_open_dataslot_file
 );
 
     bridge_driver_if cmd(bridge.clk), req(bridge.clk);
@@ -33,7 +41,7 @@ module bridge_core(
         .req
     );
 
-    bridge_cmd(
+    bridge_cmd bc(
         .cmd,
         .core_status,
         .reset_n,
@@ -50,10 +58,16 @@ module bridge_core(
         .host_notify_display_mode
     );
 
-    // TEMP
-    always_comb begin
-        req.valid = '1;
-        req.word  = 16'h140;
-    end
+    bridge_req br(
+        .req,
+
+        .core_ready_to_run,
+        .core_debug_event_log,
+        .core_dataslot_read,
+        .core_dataslot_write,
+        .core_dataslot_flush,
+        .core_get_dataslot_filename,
+        .core_open_dataslot_file
+    );
 
 endmodule

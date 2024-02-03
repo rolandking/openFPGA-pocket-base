@@ -103,13 +103,13 @@ module bridge_req (
     // state
     typedef enum logic[2:0] {
         REQ_STATE_IDLE                  = 3'd0,
-        REQ_STATE_OPEN_DATASLOT_FILE    = 3'd1,
-        REQ_STATE_GET_DATASLOT_FILENAME = 3'd2,
-        REQ_STATE_DATASLOT_FLUSH        = 3'd3,
+        REQ_STATE_READY_TO_RUN          = 3'd1,
+        REQ_STATE_DEBUG_EVENT_LOG       = 3'd2,
+        REQ_STATE_DATASLOT_READ         = 3'd3,
         REQ_STATE_DATASLOT_WRITE        = 3'd4,
-        REQ_STATE_DATASLOT_READ         = 3'd5,
-        REQ_STATE_DEBUG_EVENT_LOG       = 3'd6,
-        REQ_STATE_READY_TO_RUN          = 3'd7
+        REQ_STATE_DATASLOT_FLUSH        = 3'd5,
+        REQ_STATE_GET_DATASLOT_FILENAME = 3'd6,
+        REQ_STATE_OPEN_DATASLOT_FILE    = 3'd7
     } req_state_e;
 
     // calculate the priority state
@@ -142,14 +142,32 @@ module bridge_req (
     req_state_e req_state = REQ_STATE_IDLE;
 
     always_comb begin
-        req.word = '0;
-        req.param = 'x;
+        // nothing has a result
+        req.result                      = '0;
+
+        // default this to zero
+        req.word                        = '0;
+
+        // params is long so 'x it when unused
+        req.param                       = 'x;
+
+        // turned back to '0 in IDLE and default
+        req.valid                       = '1;
+
+        core_ready_to_run.done          = '0;
+        core_debug_event_log.done       = '0;
+        core_dataslot_read.done         = '0;
+        core_dataslot_write.done        = '0;
+        core_dataslot_flush.done        = '0;
+        core_get_dataslot_filename.done = '0;
+        core_open_dataslot_file.done    = '0;
 
         case(req_state)
             REQ_STATE_IDLE: begin
+                req.valid = '0;
             end
             REQ_STATE_READY_TO_RUN: begin
-                req.word           = bridge_pkg::core_ready_to_run;
+                req.word = bridge_pkg::core_ready_to_run;
                 core_ready_to_run.done = req.done;
             end
             REQ_STATE_DEBUG_EVENT_LOG: begin
@@ -195,10 +213,10 @@ module bridge_req (
                 core_open_dataslot_file.done = req.done;
             end
             default: begin
+                req.valid = '0;
             end
         endcase
     end
-
 
     // if idle and there's a priority state, move to it
     // capturing the parameters
@@ -212,91 +230,16 @@ module bridge_req (
         end
     end
 
-    always_comb begin
-        req.valid    = (req_state != REQ_STATE_IDLE);
-        req.response = '0;
-    end
-
-    always_comb begin
-        req.word                    = '0;
-        req.param                   = '0;
-
-        core_ready_to_run.ack           = '0;
-        core_ready_to_run.done          = '0;
-        core_debug_event_log.ack        = '0;
-        core_debug_event_log.done       = '0;
-        core_dataslot_read.ack          = '0;
-        core_dataslot_read.done         = '0;
-        core_dataslot_write.ack         = '0;
-        core_dataslot_write.done        = '0;
-        core_dataslot_flush.ack         = '0;
-        core_dataslot_flush.done        = '0;
-        core_get_dataslot_filename.ack  = '0;
-        core_get_dataslot_filename.done = '0;
-        core_open_dataslot_file.ack     = '0;
-        core_open_dataslot_file.done    = '0;
-
-        case(req_state)
-
-            REQ_STATE_IDLE: begin
-            end
-            REQ_STATE_READY_TO_RUN: begin
-                req.word           = bridge_pkg::core_ready_to_run;
-                core_ready_to_run.ack  = req.ack;
-                core_ready_to_run.done = req.done;
-            end
-            REQ_STATE_DEBUG_EVENT_LOG: begin
-                req.word  = bridge_pkg::core_debug_event_log;
-                req.param = bridge_pkg::core_debug_event_log_param_expand(
-                    core_debug_event_log.param
-                );
-                core_debug_event_log.ack  = req.ack;
-                core_debug_event_log.done = req.done;
-            end
-            REQ_STATE_DATASLOT_READ: begin
-                req.word  = bridge_pkg::core_dataslot_read;
-                req.param = bridge_pkg::core_dataslot_read_param_expand(
-                    core_dataslot_read.param
-                );
-                core_dataslot_read.ack  = req.ack;
-                core_dataslot_read.done = req.done;
-            end
-            REQ_STATE_DATASLOT_WRITE: begin
-                req.word  = bridge_pkg::core_dataslot_write;
-                req.param = bridge_pkg::core_dataslot_write_param_expand(
-                    core_dataslot_write.param
-                );
-                core_dataslot_write.ack  = req.ack;
-                core_dataslot_write.done = req.done;
-            end
-            REQ_STATE_DATASLOT_FLUSH: begin
-                req.word  = bridge_pkg::core_dataslot_flush;
-                req.param = bridge_pkg::core_dataslot_flush_param_expand(
-                    core_dataslot_flush.param
-                );
-                core_dataslot_flush.ack  = req.ack;
-                core_dataslot_flush.done = req.done;
-            end
-            REQ_STATE_GET_DATASLOT_FILENAME: begin
-                req.word  = bridge_pkg::core_get_dataslot_filename;
-                req.param = bridge_pkg::core_get_dataslot_filename_param_expand(
-                    core_get_dataslot_filename.param
-                );
-                core_get_dataslot_filename.ack  = req.ack;
-                core_get_dataslot_filename.done = req.done;
-            end
-            REQ_STATE_OPEN_DATASLOT_FILE: begin
-                req.word  = bridge_pkg::core_open_dataslot_file;
-                req.param = bridge_pkg::core_open_dataslot_file_param_expand(
-                    core_open_dataslot_file.param
-                );
-                core_open_dataslot_file.ack  = req.ack;
-                core_open_dataslot_file.done = req.done;
-            end
-
-            default: begin
-            end
-        endcase
+    // wire out the results for the few requests which
+    // need them. This will be valid on req.done
+    bridge_word_t result;
+    bidir_oneway#(.width($bits(bridge_word_t)))(.in(req.result), .out(result));
+    always_comb  begin
+        core_dataslot_read.result         = bridge_pkg::core_dataslot_read_result_e'(result);
+        core_dataslot_write.result        = bridge_pkg::core_dataslot_write_result_e'(result);
+        core_dataslot_flush.result        = bridge_pkg::core_dataslot_flush_result_e'(result);
+        core_get_dataslot_filename.result = bridge_pkg::core_get_dataslot_filename_result_e'(result);
+        core_open_dataslot_file.result    = bridge_pkg::core_open_dataslot_file_result_e'(result);
     end
 
 endmodule

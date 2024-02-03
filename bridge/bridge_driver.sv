@@ -329,9 +329,9 @@ module bridge_driver(
                 end
 
                 if(core_cmd_status[31:16] == "ok") begin
-                    req.progress <= core_cmd_status[15:0];
+                    req.result   <= core_cmd_status[15:0];
                     req.response <= core_cmd_response;
-                    req_state        <= REQ_STATE_DONE;
+                    req_state    <= REQ_STATE_DONE;
                 end
             end
 
