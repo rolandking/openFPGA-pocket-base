@@ -1,7 +1,8 @@
 `timescale 1ns/1ps
 
 module bridge_core(
-    bridge_if                                       bridge,
+    bridge_if                                       bridge_cmd,
+    bridge_if                                       bridge_id,
 
     // host_request_status - core provides a continuous status,
     // returning undefined will hold the request
@@ -33,10 +34,10 @@ module bridge_core(
     core_open_dataslot_file_if                      core_open_dataslot_file
 );
 
-    bridge_driver_if cmd(bridge.clk), req(bridge.clk);
+    bridge_driver_if cmd(bridge_cmd.clk), req(bridge_cmd.clk);
 
     bridge_driver bd(
-        .bridge,
+        .bridge  (bridge_cmd),
         .cmd,
         .req
     );
@@ -68,6 +69,10 @@ module bridge_core(
         .core_dataslot_flush,
         .core_get_dataslot_filename,
         .core_open_dataslot_file
+    );
+
+    bridge_id bid (
+        .bridge    (bridge_id)
     );
 
 endmodule
