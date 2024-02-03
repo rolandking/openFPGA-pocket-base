@@ -233,7 +233,7 @@ module bridge_req (
     // wire out the results for the few requests which
     // need them. This will be valid on req.done
     bridge_word_t result;
-    bidir_oneway#(.width($bits(bridge_word_t)))(.in(req.result), .out(result));
+    bidir_oneway#(.width($bits(bridge_word_t)))result_ow(.in(req.result), .out(result));
     always_comb  begin
         core_dataslot_read.result         = bridge_pkg::core_dataslot_read_result_e'(result);
         core_dataslot_write.result        = bridge_pkg::core_dataslot_write_result_e'(result);

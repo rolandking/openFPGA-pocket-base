@@ -3,6 +3,7 @@
 module bridge_core(
     bridge_if                                       bridge_cmd,
     bridge_if                                       bridge_id,
+    bridge_if                                       bridge_dataslot,
 
     // host_request_status - core provides a continuous status,
     // returning undefined will hold the request
@@ -73,6 +74,10 @@ module bridge_core(
 
     bridge_id bid (
         .bridge    (bridge_id)
+    );
+
+    bridge_dataslot bdslt (
+        .bridge    (bridge_dataslot)
     );
 
 endmodule
