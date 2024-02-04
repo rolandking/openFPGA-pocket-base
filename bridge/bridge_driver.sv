@@ -103,20 +103,17 @@ module bridge_driver(
     // the 16 32bit registers for parameters
     logic [31:0]        host_cmd, host_cmd_status, core_cmd, core_cmd_status;
     logic [0:3][31:0]   host_cmd_param, host_cmd_response, core_cmd_param, core_cmd_response;
-    logic               core_cmd_read,  core_cmd_status_write;
-    logic               host_cmd_write, host_cmd_status_read;
+    logic               core_cmd_status_write;
+    logic               host_cmd_write;
 
     always_comb bridge.rd_data = rd_data;
 
     // reads - just take the address and put the right data on the bus
     always_ff @(posedge bridge.clk) begin
-        host_cmd_status_read  <= '0;
-        core_cmd_read         <= '0;
 
         case(bridge.addr[26:0])
             HOST_BASE[26:0] + REG_CMD_OFFSET: begin
-                rd_data              <= host_cmd_status;
-                host_cmd_status_read <= bridge.rd;
+                rd_data <= host_cmd_status;
             end
             HOST_BASE[26:0] + REG_PARAMETER_PTR_OFFSET: begin
                 rd_data <= PARAMETER_OFFSET;
@@ -125,8 +122,7 @@ module bridge_driver(
                 rd_data <= RESPONSE_OFFSET;
             end
             CORE_BASE[26:0] + REG_CMD_OFFSET: begin
-                rd_data       <= core_cmd;
-                core_cmd_read <= bridge.rd;
+                rd_data <= core_cmd;
             end
             CORE_BASE[26:0] + REG_PARAMETER_PTR_OFFSET: begin
                 rd_data <= PARAMETER_OFFSET;
