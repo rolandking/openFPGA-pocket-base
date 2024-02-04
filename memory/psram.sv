@@ -31,8 +31,7 @@ module psram#(
     output logic                               wr_ack,
 
     // physical connection
-    cram_if                                    cram,
-    inout  logic [DATA_BITS-1:0]               cram_dq
+    cram_if                                    cram
 );
 
     localparam real CYCLE_NANOS = 1000000000 / CLK_FREQ;

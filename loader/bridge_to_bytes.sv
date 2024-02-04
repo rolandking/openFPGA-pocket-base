@@ -3,28 +3,16 @@
 // at a time to memory
 
 module bridge_to_bytes#(
-    // any address & fixed_mask but be == fixed_bits
-    parameter logic[31:0] fixed_bits = '0,
-    parameter logic[31:0] fixed_mask = '1,
-    parameter int read_cycles = 2,
+    parameter int read_cycles  = 2,
     parameter int write_cycles = 1
 ) (
-    input logic         clk,
-
-    input  logic [31:0]  bridge_addr,
-    input  logic         bridge_wr,
-    input  logic [31:0]  bridge_wr_data,
-    input  logic         bridge_rd,
-    output logic [31:0]  bridge_rd_data,
-    output logic         bridge_rd_ready,
+    bridge_if            bridge,
 
     output logic [31:0]  mem_address,
     output logic [7:0]   mem_wr_data,
     output logic         mem_wr,
     input  logic [7:0]   mem_rd_data,
-    output logic         mem_rd,
-
-    output logic         selected
+    output logic         mem_rd
 );
 
     localparam int max_cycles = (read_cycles > write_cycles) ? read_cycles : write_cycles;
@@ -47,7 +35,6 @@ module bridge_to_bytes#(
     };
 
     enable_t      enables;
-    logic         address_ok, selected_ff;
     logic [31:0]  write_cache, read_cache;
     logic [31:0]  address;
     logic         valid_address;
@@ -56,19 +43,18 @@ module bridge_to_bytes#(
     logic         last_cycle;
     logic         idle;
 
-    always_ff @(posedge clk) begin
-        selected_ff <= selected;
+    always_ff @(posedge bridge.clk) begin
         if(idle) begin
-            if(bridge_rd && address_ok) begin
+            if(bridge.rd) begin
                 enables <= read_enables;
                 is_read <= 1'b1;
             end
-            if(bridge_wr && address_ok) begin
+            if(bridge.wr) begin
                 enables <= write_enables;
                 is_read <= 1'b0;
             end
-            write_cache <= bridge_wr_data;
-            address     <= bridge_addr;
+            write_cache <= bridge.wr_data;
+            address     <= bridge.addr;
         end else begin
             if(enable) begin
                 write_cache <= {write_cache[23:0], 8'hx};
@@ -86,10 +72,6 @@ module bridge_to_bytes#(
     end
 
     always_comb begin
-        address_ok           = (bridge_addr & fixed_mask) == fixed_bits;
-        // selected from the rd or wr all the way to the next one as data is only
-        // read just before the next read cycle
-        selected             = (bridge_rd || bridge_wr) ? address_ok :  selected_ff;
         mem_wr_data          = write_cache[31-:8];
         idle                 = (enables == '0);
         last_cycle           = (enables == num_enables'(1'b1));
@@ -98,8 +80,7 @@ module bridge_to_bytes#(
         mem_wr               = enable && ~is_read;
         mem_rd               = enable &&  is_read;
         mem_address          = address;
-        bridge_rd_data       = read_cache;
-        bridge_rd_ready      = last_cycle && is_read;
+        bridge.rd_data       = read_cache;
     end
 
 endmodule
