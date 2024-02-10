@@ -6,13 +6,11 @@ module bridge_to_bytes#(
     parameter int read_cycles  = 2,
     parameter int write_cycles = 1
 ) (
+    // 32 bit data path
     bridge_if            bridge,
 
-    output logic [31:0]  mem_address,
-    output logic [7:0]   mem_wr_data,
-    output logic         mem_wr,
-    input  logic [7:0]   mem_rd_data,
-    output logic         mem_rd
+    // 8 bit data path
+    bridge_if            mem
 );
 
     localparam int max_cycles = (read_cycles > write_cycles) ? read_cycles : write_cycles;
@@ -58,9 +56,9 @@ module bridge_to_bytes#(
         end else begin
             if(enable) begin
                 write_cache <= {write_cache[23:0], 8'hx};
-                read_cache  <= {read_cache[23:0], mem_rd_data};
+                read_cache  <= {read_cache[23:0], mem.rd_data};
             end else begin
-                read_cache[7:0] <= mem_rd_data;
+                read_cache[7:0] <= mem.rd_data;
             end
 
             if(pre_enable) begin
@@ -72,14 +70,14 @@ module bridge_to_bytes#(
     end
 
     always_comb begin
-        mem_wr_data          = write_cache[31-:8];
+        mem.wr_data          = write_cache[31-:8];
         idle                 = (enables == '0);
         last_cycle           = (enables == num_enables'(1'b1));
         enable               = enables[0] && !last_cycle;
         pre_enable           = enables[1];
-        mem_wr               = enable && ~is_read;
-        mem_rd               = enable &&  is_read;
-        mem_address          = address;
+        mem.wr               = enable && ~is_read;
+        mem.rd               = enable &&  is_read;
+        mem.addr             = address;
         bridge.rd_data       = read_cache;
     end
 
