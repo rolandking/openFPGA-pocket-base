@@ -13,9 +13,12 @@ module bridge_to_bytes#(
     bridge_if            mem
 );
 
+    `STATIC_ASSERT(bridge.data_width == 32, bridge data width must be 32)
+    `STATIC_ASSERT(mem.data_width    ==  8, mem data width must be 8)
+
     localparam int max_cycles = (read_cycles > write_cycles) ? read_cycles : write_cycles;
 
-    /*
+    /*h
      * enables has one bit for each enable cycle plus one set bit for the
      * final cycle of the sequence
      */
