@@ -30,7 +30,7 @@ module bridge_master #(
 
     pocket::bridge_addr_t addr_ff;
     pocket::bridge_data_t wr_data_ff;
-    logic                 rd_ff, wr_ff;
+    logic                 rd_ff, wr_ff, rd_ff_ff, wr_ff_ff;
     logic                 selected[NUM_LEAVES], selected_ff[NUM_LEAVES];
 
     // FIXME get rid of this crap
@@ -71,6 +71,8 @@ module bridge_master #(
         end
         rd_ff       <= bridge_in.rd;
         wr_ff       <= bridge_in.wr;
+        rd_ff_ff    <= rd_ff;
+        wr_ff_ff    <= wr_ff;
         selected_ff <= selected;
      end
 
@@ -86,7 +88,7 @@ module bridge_master #(
             always_comb begin
                 bridge_out[slave].addr    = addr_ff;
                 bridge_out[slave].wr_data = wr_data_ff;
-                bridge_out[slave].wr      = wr_ff && selected_ff[slave];
+                bridge_out[slave].wr      = wr_ff_ff && selected_ff[slave];
                 bridge_out[slave].rd      = rd_trigger && selected_ff[slave];
                 rd_data[slave]            = bridge_out[slave].rd_data;
             end
