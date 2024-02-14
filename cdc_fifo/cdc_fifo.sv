@@ -1,19 +1,19 @@
 `timescale 1ns/1ps
 
 module cdc_fifo #(
-    parameter int address_width,
-    parameter int data_width
+    parameter int address_width = 4,
+    parameter int data_width = 32
 
 ) (
-    input  wire                   write_clk,        // clock for data being written to the FIFO
-    input  wire [data_width-1:0]  write_data,       // data to be pushed into the fifo
-    input  wire                   write_valid,      // valid signal for data, data will be pushed if write is ready
-    output logic                  write_ready,      // FIFO can receive data
+    input  wire                   wr_clk,           // clock for data being written to the FIFO
+    input  wire [data_width-1:0]  wr_data,          // data to be pushed into the fifo
+    input  wire                   wr,               // valid signal for data, data will be pushed if write is ready
+    output logic                  wr_ready,         // FIFO can receive data
 
-    input wire                    read_clk,         // clock for data being read fro the FIFO
-    output logic [data_width-1:0] read_data,        // data to be read, valid when read_valid is asserted
-    output logic                  read_valid,       // read data is valid
-    input  wire                   read_ack          // ack the read data
+    input wire                    rd_clk,           // clock for data being read fro the FIFO
+    output logic [data_width-1:0] rd_data,          // data to be read, valid when rd is asserted
+    output logic                  rd,               // read data is valid
+    input  wire                   rd_ack            // ack the read data
 );
 
     localparam int num_entries = ( 1 << address_width );
@@ -47,7 +47,7 @@ module cdc_fifo #(
         // pointers have an extra bit which counts wrap arounds modulus 2. So
         // if the two pointers are equal, the FIFO is empty, if the lower
         // address are equal but the high bit is different, the fifo is full
-        write_ready       = ( write_p != {~read_p_cdc[address_width], read_p_cdc[address_width-1:0]} );
+        wr_ready       = ( write_p != {~read_p_cdc[address_width], read_p_cdc[address_width-1:0]} );
         write_p_next      =   write_p + {{address_width{1'b0}}, 1'b1};
         mem_write_address =   write_p[address_width-1:0];
     end
@@ -55,33 +55,33 @@ module cdc_fifo #(
     // infer the memory
     data_t mem[num_entries];
 
-    always @(posedge write_clk) begin
+    always @(posedge wr_clk) begin
         // increment the address on write
-        if(write_ready && write_valid) begin
-            mem[mem_write_address] <= write_data;
+        if(wr_ready && wr) begin
+            mem[mem_write_address] <= wr_data;
             write_p                <= write_p_next;
         end
     end
 
-    logic read_ready;
+    logic rd_ready;
     always_comb begin
         // if the extended pointers are equal the FIFO is empty, else just/ read
-        read_ready             = (read_p != write_p_cdc);
+        rd_ready               = (read_p != write_p_cdc);
         read_p_next            =  read_p + {{address_width{1'b0}}, 1'b1};
         mem_read_address       = read_p[address_width-1:0];
     end
 
-    always @(posedge read_clk) begin
-        // if data is acked move the pointer. ACK is sampled same point as
+    always @(posedge rd_clk) begin
+        // if data is acked move the pointer.
         // ACK is sampled at the same edge VALID is set, you are expected to
         // know before the valid cycle whether you will consume data and
         // pre-set ACK. If during the valid cycle you decide you can take no
         // more data then deassert ACK
-        if(read_ready && read_ack) begin
+        if(rd_ready && rd_ack) begin
             read_p <= read_p_next;
         end
-        read_data <= mem[mem_read_address];
-        read_valid <= read_ready;
+        rd_data <= mem[mem_read_address];
+        rd      <= rd_ready;
     end
 
     // gray encode the write pointer, pass it over the cdc and unencode it/ again
@@ -98,11 +98,11 @@ module cdc_fifo #(
 
     cdc_sync#(
         .num_bits   ($bits(pointer_t))
-    ) cdc_write_gray_to_read_clk (
-        .from_clk   (write_clk),
+    ) cdc_write_gray_to_rd_clk (
+        .from_clk   (wr_clk),
         .from_data  (write_p_gray),
 
-        .to_clk     (read_clk),
+        .to_clk     (rd_clk),
         .to_data    (write_p_gray_cdc)
     );
 
@@ -127,11 +127,11 @@ module cdc_fifo #(
 
     cdc_sync#(
         .num_bits   ($bits(pointer_t))
-    ) cdc_read_gray_to_write_clk (
-        .from_clk   (read_clk),
+    ) cdc_read_gray_to_wr_clk (
+        .from_clk   (rd_clk),
         .from_data  (read_p_gray),
 
-        .to_clk     (write_clk),
+        .to_clk     (wr_clk),
         .to_data    (read_p_gray_cdc)
     );
 

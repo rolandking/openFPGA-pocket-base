@@ -1,12 +1,14 @@
 `timescale 1ns/1ps
 
-module cdc_buffer(
-    input wire          write_clk,
-    input wire  [15:0]  write_data,
-    input wire          write_en,
+module cdc_buffer#(
+    parameter int data_width
+)(
+    input wire                    wr_clk,
+    input wire  [data_width-1:0]  wr_data,
+    input wire                    wr,
 
-    input wire          read_clk,
-    output logic[15:0]  read_data
+    input wire                    rd_clk,
+    output logic[data_width-1:0]  rd_data
 );
 
     typedef logic [4:0] address_t;
@@ -18,8 +20,8 @@ module cdc_buffer(
         read_address_gray,
         read_address;
 
-    always_ff @(posedge write_clk) begin
-        if(write_en) begin
+    always_ff @(posedge wr_clk) begin
+        if(wr) begin
             written_address <= write_address;
             write_address   <= write_address + 5'd1;
         end
@@ -34,11 +36,11 @@ module cdc_buffer(
 
     cdc_sync#(
         .num_bits   ($bits(address_t))
-    ) cdc_write_gray_to_read_clk (
-        .from_clk   (write_clk),
+    ) cdc_write_gray_to_rd_clk (
+        .from_clk   (wr_clk),
         .from_data  (written_address_gray),
 
-        .to_clk     (read_clk),
+        .to_clk     (rd_clk),
         .to_data    (read_address_gray)
     );
 
@@ -51,16 +53,16 @@ module cdc_buffer(
 
 
     (* ramstyle="mlab" *)
-    logic [15:0] mem [32];
+    logic [data_width-1:0] mem [32];
 
-    always_ff @(posedge write_clk) begin
-        if(write_en) begin
-            mem[write_address] <= write_data;
+    always_ff @(posedge wr_clk) begin
+        if(wr) begin
+            mem[write_address] <= wr_data;
         end
     end
 
-    always_ff @(posedge read_clk) begin
-        read_data <= mem[read_address];
+    always_ff @(posedge rd_clk) begin
+        rd_data <= mem[read_address];
     end
 
 endmodule

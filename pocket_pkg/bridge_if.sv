@@ -8,21 +8,22 @@ interface bridge_if#(
     pocket::bridge_addr_t  addr;
     logic [data_width-1:0] wr_data;
     logic                  wr;
-    pocket::bridge_data_t  rd_data;
+    logic [data_width-1:0] rd_data;
     logic                  rd;
 endinterface
 
 module bridge_connect#(
     parameter int data_width=32
 )(
-    input  pocket::bridge_addr_t addr,
-    input  pocket::bridge_data_t wr_data,
-    input  logic                 wr,
-    output pocket::bridge_data_t rd_data,
-    input  logic                 rd,
-    bridge_if                    bridge
-);
+    input  pocket::bridge_addr_t  addr,
+    input  logic [data_width-1:0] wr_data,
+    input  logic                  wr,
+    output logic [data_width-1:0] rd_data,
+    input  logic                  rd,
 
+    bridge_if                     bridge
+);
+    `STATIC_ASSERT(bridge.data_width == data_width, bridge and data must agree)
     always_comb begin
         bridge.addr     = addr;
         bridge.wr_data  = wr_data;
