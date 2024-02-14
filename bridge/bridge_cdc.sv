@@ -1,8 +1,13 @@
 `timescale 1ns / 1ps
 
-module bridge_cdc#(
-    parameter int address_width = 2
-)(
+// FIXME: better to have read_cycles and put data on the bus when
+//        the read signal fires + n cycles than when it changes, if
+//        it changes often then you will lose bits.
+//        check what has read_cyles (bridge_to_bytes) and see how to
+//        incorporate this. Do we need a rd_ack signal in bridge_if
+//        (to be renamed) or do we need a read ack signal here to trigger
+//        data to be sent back?
+module bridge_cdc (
     bridge_if in,
     bridge_if out
 );
