@@ -30,8 +30,7 @@ module bridge_cdc#(
         write_entry.wr      = in.wr;
     end
 
-    cdc_fifo#(
-        .address_width  (address_width),
+    cdc_register#(
         .data_width     ($bits(entry_t))
     ) cdcf (
         .wr_clk         (in.clk),
@@ -41,8 +40,7 @@ module bridge_cdc#(
 
         .rd_clk         (out.clk),
         .rd_data        (read_entry),
-        .rd             (read_valid),
-        .rd_ack         ('1)
+        .rd             (read_valid)
     );
 
     always_comb begin
@@ -58,8 +56,7 @@ module bridge_cdc#(
     end
 
     // pass read data back across the domain
-    data_t rd_data;
-    cdc_buffer#(
+    cdc_register#(
         .data_width (data_width)
     ) cdcb (
         .wr_clk     (out.clk),
@@ -67,9 +64,7 @@ module bridge_cdc#(
         .wr         (out_rd_data_ff != out.rd_data),
 
         .rd_clk     (in.clk),
-        .rd_data    (rd_data)
+        .rd_data    (in.rd_data)
     );
-
-    always_comb in.rd_data = rd_data;
 
 endmodule
