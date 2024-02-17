@@ -5,10 +5,14 @@ module bridge_id#(
     parameter int BUILD_TIME = `BUILD_TIME,
     parameter int BUILD_UNIQUE_ID = `BUILD_UNIQUE_ID
 )(
-    bridge_if bridge
+    bus_if bridge
 );
 
     always_ff @(posedge bridge.clk) begin
+
+        // echo the rd back
+        bridge.rd_data_valid <= bridge.rd;
+
         case(bridge.addr[3:2])
             2'b00: begin
                 bridge.rd_data <= BUILD_DATE;

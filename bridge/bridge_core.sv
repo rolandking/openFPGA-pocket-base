@@ -1,9 +1,9 @@
 `timescale 1ns/1ps
 
 module bridge_core(
-    bridge_if                                       bridge_cmd,
-    bridge_if                                       bridge_id,
-    bridge_if                                       bridge_dataslot,
+    bus_if                                          bridge_cmd,
+    bus_if                                          bridge_id,
+    bus_if                                          bridge_dataslot,
 
     // host_request_status - core provides a continuous status,
     // returning undefined will hold the request

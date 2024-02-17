@@ -65,8 +65,9 @@ endinterface
  * a read for enough cycles
  */
 module bridge_driver(
-    bridge_if           bridge,
+    bus_if              bridge,
     input logic         bridge_endian_little,
+
     bridge_driver_if    cmd,
     bridge_driver_if    req
 );
@@ -96,67 +97,64 @@ module bridge_driver(
     parameter logic [26:0] OFFSET_2                 = 27'h00000008;
     parameter logic [26:0] OFFSET_3                 = 27'h0000000c;
 
-
-    // the data returned to the bridge
-    pocket::bridge_data_t rd_data;
-
     // the 16 32bit registers for parameters
     logic [31:0]        host_cmd, host_cmd_status, core_cmd, core_cmd_status;
     logic [0:3][31:0]   host_cmd_param, host_cmd_response, core_cmd_param, core_cmd_response;
     logic               core_cmd_status_write;
     logic               host_cmd_write;
 
-    always_comb bridge.rd_data = rd_data;
-
     // reads - just take the address and put the right data on the bus
     always_ff @(posedge bridge.clk) begin
 
+        // data always valid a cycle after the read
+        bridge.rd_data_valid <= bridge.rd;
+
         case(bridge.addr[26:0])
             HOST_BASE[26:0] + REG_CMD_OFFSET: begin
-                rd_data <= host_cmd_status;
+                bridge.rd_data <= host_cmd_status;
             end
             HOST_BASE[26:0] + REG_PARAMETER_PTR_OFFSET: begin
-                rd_data <= PARAMETER_OFFSET;
+                bridge.rd_data <= PARAMETER_OFFSET;
             end
             HOST_BASE[26:0] + REG_RESPONSE_PTR_OFFSET: begin
-                rd_data <= RESPONSE_OFFSET;
+                bridge.rd_data <= RESPONSE_OFFSET;
             end
             CORE_BASE[26:0] + REG_CMD_OFFSET: begin
-                rd_data <= core_cmd;
+                bridge.rd_data <= core_cmd;
             end
             CORE_BASE[26:0] + REG_PARAMETER_PTR_OFFSET: begin
-                rd_data <= PARAMETER_OFFSET;
+                bridge.rd_data <= PARAMETER_OFFSET;
             end
             CORE_BASE[26:0] + REG_RESPONSE_PTR_OFFSET: begin
-                rd_data <= RESPONSE_OFFSET;
+                bridge.rd_data <= RESPONSE_OFFSET;
             end
             HOST_BASE[26:0] + RESPONSE_OFFSET[26:0]  + OFFSET_0: begin
-                rd_data <= host_cmd_response[0];
+                bridge.rd_data <= host_cmd_response[0];
             end
             HOST_BASE[26:0] + RESPONSE_OFFSET[26:0]  + OFFSET_1: begin
-                rd_data <= host_cmd_response[1];
+                bridge.rd_data <= host_cmd_response[1];
             end
             HOST_BASE[26:0] + RESPONSE_OFFSET[26:0]  + OFFSET_2: begin
-                rd_data <= host_cmd_response[2];
+                bridge.rd_data <= host_cmd_response[2];
             end
             HOST_BASE[26:0] + RESPONSE_OFFSET[26:0]  + OFFSET_3: begin
-                rd_data <= host_cmd_response[3];
+                bridge.rd_data <= host_cmd_response[3];
             end
             CORE_BASE[26:0] + PARAMETER_OFFSET[26:0] + OFFSET_0: begin
-                rd_data <= core_cmd_param[0];
+                bridge.rd_data <= core_cmd_param[0];
             end
             CORE_BASE[26:0] + PARAMETER_OFFSET[26:0] + OFFSET_1: begin
-                rd_data <= core_cmd_param[1];
+                bridge.rd_data <= core_cmd_param[1];
             end
             CORE_BASE[26:0] + PARAMETER_OFFSET[26:0] + OFFSET_2: begin
-                rd_data <= core_cmd_param[2];
+                bridge.rd_data <= core_cmd_param[2];
             end
             CORE_BASE[26:0] + PARAMETER_OFFSET[26:0] + OFFSET_3: begin
-                rd_data <= core_cmd_param[3];
+                bridge.rd_data <= core_cmd_param[3];
             end
 
             default: begin
-                rd_data <= '1;
+                bridge.rd_data <= '1;
             end
         endcase
     end

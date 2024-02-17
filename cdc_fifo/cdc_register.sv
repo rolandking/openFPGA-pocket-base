@@ -17,7 +17,7 @@ module cdc_register#(
 
     input  logic                   rd_clk,
     output logic [data_width-1:0]  rd_data,
-    output logic                   rd
+    output logic                   rd_data_valid
 );
 
     logic wr_flag_wr = 0;
@@ -54,14 +54,14 @@ module cdc_register#(
     always_comb begin
         // we can read when the flags differ,
         // the write flag change has passed over the CDC
-        rd = wr_flag_rd ^ rd_flag_rd;
+        rd_data_valid = wr_flag_rd ^ rd_flag_rd;
     end
 
     always_ff @(posedge rd_clk) begin
         rd_flag_rd <= wr_flag_rd;
     end
 
-    // pass the rd_flag_wr across the CCD
+    // pass the rd_flag_wr across the CCD to complete the handshake
     cdc_sync#(
         .num_bits  (1)
     ) rd_flag_to_wr (

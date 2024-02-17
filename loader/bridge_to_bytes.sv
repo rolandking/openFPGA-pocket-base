@@ -1,87 +1,98 @@
 
 // take the input from bridge which is a 32 bit word and write it out 8 bits
-// at a time to memory
+// at a time to memory, do the same for reads and put the 32 bits back together
 
-module bridge_to_bytes#(
-    parameter int read_cycles  = 2,
-    parameter int write_cycles = 1
-) (
-    // 32 bit data path
-    bridge_if            bridge,
-
-    // 8 bit data path
-    bridge_if            mem
+module bridge_to_bytes(
+    // 32-bit data + address, address always 0bxxxxx... xxx00
+    bus_if  bridge,
+    // 8-bit data
+    bus_if  mem
 );
 
     `STATIC_ASSERT(bridge.data_width == 32, bridge data width must be 32)
     `STATIC_ASSERT(mem.data_width    ==  8, mem data width must be 8)
 
-    localparam int max_cycles = (read_cycles > write_cycles) ? read_cycles : write_cycles;
+    logic idle;
+    logic [31:2] bridge_addr_ff;
+    logic [31:0] bridge_wr_data_ff;
+    logic [1:0]  counter;
+    // fill with 1's from the left as each byte of read data is
+    // shifted into the buffer
+    logic [3:0]  rd_bits;
+    logic        is_read;
 
-    /*h
-     * enables has one bit for each enable cycle plus one set bit for the
-     * final cycle of the sequence
-     */
-    localparam int num_enables   = 4 * max_cycles + 1;
-    typedef logic[num_enables-1:0] enable_t;
-    localparam enable_t read_enables  = {
-        {4*(max_cycles-read_cycles){1'b0}},
-        1'b1,
-        {4{{(read_cycles-1){1'b0}},1'b1}}
-    };
-    localparam enable_t write_enables  = {
-        {4*(max_cycles-write_cycles){1'b0}},
-        1'b1,
-        {4{{(write_cycles-1){1'b0}},1'b1}}
-    };
+    typedef enum logic[1:0] {
+        IDLE     = 2'b00,
+        ADDR_OUT = 2'b01,
+        WAIT_RD  = 2'b10
+    } state_e;
 
-    enable_t      enables;
-    logic [31:0]  write_cache, read_cache;
-    logic [31:0]  address;
-    logic         valid_address;
-    logic         is_read;
-    logic         enable, pre_enable;
-    logic         last_cycle;
-    logic         idle;
+    state_e state = IDLE;
 
-    always_ff @(posedge bridge.clk) begin
-        if(idle) begin
-            if(bridge.rd) begin
-                enables <= read_enables;
-                is_read <= 1'b1;
-            end
-            if(bridge.wr) begin
-                enables <= write_enables;
-                is_read <= 1'b0;
-            end
-            write_cache <= bridge.wr_data;
-            address     <= bridge.addr;
-        end else begin
-            if(enable) begin
-                write_cache <= {write_cache[23:0], 8'hx};
-                read_cache  <= {read_cache[23:0], mem.rd_data};
-            end else begin
-                read_cache[7:0] <= mem.rd_data;
-            end
+    always @(posedge bridge.clk) begin
 
-            if(pre_enable) begin
-                address <= address + 32'd1;
-            end
+        // shift and count on every cycle, overridden for a new
+        // read or write command
+        bridge_wr_data_ff[23:0] <= bridge_wr_data_ff[31:8];
+        counter                 <= counter + 2'd1;
 
-            enables <= {1'b0, enables[num_enables-1:1]};
+        // shift valid read data into the 32bit buffer
+        // should not need to gate with rd_bits[0] but for safety
+        if(mem.rd_data_valid && ~rd_bits[0]) begin
+            bridge.rd_data <= {bridge.rd_data[23:0], mem.rd_data};
+            rd_bits        <= {1'b1, rd_bits[2:0]};
         end
+
+        case(state)
+            IDLE: begin
+                if(bridge.rd || bridge.wr) begin
+                    bridge_addr_ff    <= bridge.addr[31:2];
+                    bridge_wr_data_ff <= bridge.wr_data;
+                    is_read           <= bridge.rd;
+                    counter           <= '0;
+                    rd_bits           <= '0;
+                    state             <= ADDR_OUT;
+                end
+            end
+            ADDR_OUT: begin
+                if(counter == 2'b11) begin
+                    state <= is_read ? WAIT_RD : IDLE;
+                end
+            end
+            WAIT_RD: begin
+                if(rd_bits[0]) begin
+                    state <= IDLE;
+                end
+            end
+            default: begin
+            end
+        endcase
     end
 
     always_comb begin
-        mem.wr_data          = write_cache[31-:8];
-        idle                 = (enables == '0);
-        last_cycle           = (enables == num_enables'(1'b1));
-        enable               = enables[0] && !last_cycle;
-        pre_enable           = enables[1];
-        mem.wr               = enable && ~is_read;
-        mem.rd               = enable &&  is_read;
-        mem.addr             = address;
-        bridge.rd_data       = read_cache;
+
+        mem.rd               = '0;
+        mem.wr               = '0;
+        bridge.rd_data_valid = '0;
+
+        case(state)
+            IDLE: begin
+            end
+            ADDR_OUT: begin
+                mem.rd =  is_read;
+                mem.wr = ~is_read;
+            end
+            WAIT_RD: begin
+                bridge.rd_data_valid = rd_bits[0];
+            end
+            default: begin
+            end
+        endcase
+    end
+
+    always_comb begin
+        mem.addr    = {bridge_addr_ff, counter};
+        mem.wr_data = bridge_wr_data_ff[7:0];
     end
 
 endmodule
