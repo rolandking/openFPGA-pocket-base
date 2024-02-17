@@ -33,7 +33,7 @@ module bridge_to_bytes(
 
         // shift and count on every cycle, overridden for a new
         // read or write command
-        bridge_wr_data_ff[23:0] <= bridge_wr_data_ff[31:8];
+        bridge_wr_data_ff[31:8] <= bridge_wr_data_ff[23:0];
         counter                 <= counter + 2'd1;
 
         // shift valid read data into the 32bit buffer
@@ -92,7 +92,7 @@ module bridge_to_bytes(
 
     always_comb begin
         mem.addr    = {bridge_addr_ff, counter};
-        mem.wr_data = bridge_wr_data_ff[7:0];
+        mem.wr_data = bridge_wr_data_ff[31:24];
     end
 
 endmodule
