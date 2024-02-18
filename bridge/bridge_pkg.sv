@@ -500,7 +500,7 @@ package bridge_pkg;
     function automatic bridge_param_t core_dataslot_write_param_expand(
         core_dataslot_write_param_t in
     );
-        return {16'hx, in.slot_id, in.slot_offset, in.bridge_addr, in.length};
+        return {16'h0, in.slot_id, in.slot_offset, in.bridge_addr, in.length};
 
     endfunction
 
