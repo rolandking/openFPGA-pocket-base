@@ -7,7 +7,7 @@
 module cdc_sync#(
     parameter int num_bits
 ) (
-    input  wire               from_clk, 
+    input  wire               from_clk,
     input  wire[num_bits-1:0] from_data,
     input  wire               to_clk,
     output wire[num_bits-1:0] to_data
@@ -20,7 +20,7 @@ module cdc_sync#(
         from_data_ff <= from_data;
     end
 
-    // the register into the to_clk domain twice 
+    // the register into the to_clk domain twice
     logic [num_bits-1:0] to_data_metastable;
 
     always @(posedge to_clk) begin
@@ -29,4 +29,3 @@ module cdc_sync#(
     end
 
 endmodule
-

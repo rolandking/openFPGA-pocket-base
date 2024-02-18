@@ -40,7 +40,7 @@ module bridge_to_bytes(
         // should not need to gate with rd_bits[0] but for safety
         if(mem.rd_data_valid && ~rd_bits[0]) begin
             bridge.rd_data <= {bridge.rd_data[23:0], mem.rd_data};
-            rd_bits        <= {1'b1, rd_bits[2:0]};
+            rd_bits        <= {1'b1, rd_bits[3:1]};
         end
 
         case(state)

@@ -26,6 +26,14 @@ package bridge_pkg;
         host_notify_display_mode    = 16'h00b8
     } host_commands_e;
 
+    typedef struct packed {
+        logic[47:32] size_upper;
+        logic[15:0]  slot_id;
+    } dataslot_even_t;
+
+    typedef struct packed {
+        logic[31:0] size_lower;
+    } dataslot_odd_t;
 
     /////////////////////////////////////////////////////////
     // host_request_status
