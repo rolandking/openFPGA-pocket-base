@@ -312,7 +312,9 @@ module bridge_driver(
 
             REQ_STATE_WAIT_WRITE_STATUS: begin
                 if(core_cmd_status_write) begin
-                    core_cmd <= '0;
+                    // copy the written status back so it can be re-read
+                    // this seems useless but is what the old core does
+                    core_cmd <= core_cmd_status;
                     req_state <= REQ_STATE_WAIT_DONE;
                 end
             end

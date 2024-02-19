@@ -254,7 +254,7 @@ package bridge_pkg;
     function automatic bridge_param_t host_savestate_start_query_response_expand(
         host_savestate_start_query_response_t in
     );
-        return {31'hx, in.created, in.address, in.size, 32'hx};
+        return {31'h0, in.created, in.address, in.size, 32'h0};
     endfunction
 
 
@@ -297,7 +297,7 @@ package bridge_pkg;
     function automatic bridge_param_t host_savestate_load_query_response_expand(
         host_savestate_load_query_response_t in
     );
-        return {31'hx, in.loaded, in.address, in.max_size, 32'hx};
+        return {31'h0, in.loaded, in.address, in.max_size, 32'h0};
     endfunction
 
 
@@ -411,7 +411,7 @@ package bridge_pkg;
     function automatic bridge_param_t host_notify_display_mode_response_expand(
         host_notify_display_mode_response_t in
     );
-        return {16'hx, in.affirm_greyscale, 96'hx};
+        return {16'h0, in.affirm_greyscale, 96'h0};
 
     endfunction
 
@@ -453,7 +453,7 @@ package bridge_pkg;
     function automatic bridge_param_t core_debug_event_log_param_expand(
         core_debug_event_log_param_t in
     );
-        return {16'hx, in.event_id, 96'hx};
+        return {16'h0, in.event_id, 96'h0};
     endfunction
 
 
@@ -468,12 +468,13 @@ package bridge_pkg;
         slot_id_t      slot_id;
         logic [31:0]   slot_offset;
         bridge_addr_t  bridge_addr;
+        logic [31:0]   length;
     } core_dataslot_read_param_t;
 
     function automatic bridge_param_t core_dataslot_read_param_expand(
         core_dataslot_read_param_t in
     );
-        return {16'hx, in.slot_id, in.slot_offset, in.bridge_addr, 32'hx};
+        return {16'h0, in.slot_id, in.slot_offset, in.bridge_addr, in.length};
 
     endfunction
 
@@ -525,7 +526,7 @@ package bridge_pkg;
     function automatic bridge_param_t core_dataslot_flush_param_expand(
         core_dataslot_flush_param_t in
     );
-        return {16'hx, in.slot_id, 96'hx};
+        return {16'h0, in.slot_id, 96'h0};
     endfunction
 
     typedef enum bridge_word_t {
@@ -550,7 +551,7 @@ package bridge_pkg;
     function automatic bridge_param_t core_get_dataslot_filename_param_expand(
         core_get_dataslot_filename_param_t in
     );
-        return {16'hx, in.slot_id, in.pointer, 64'hx};
+        return {16'h0, in.slot_id, in.pointer, 64'h0};
     endfunction
 
     typedef enum bridge_word_t {
@@ -578,7 +579,7 @@ package bridge_pkg;
     function automatic bridge_param_t core_open_dataslot_file_param_expand(
         core_open_dataslot_file_param_t in
     );
-        return {16'hx, in.slot_id, in.pointer, 64'hx};
+        return {16'h0, in.slot_id, in.pointer, 64'h0};
     endfunction
 
     typedef enum bridge_word_t {
