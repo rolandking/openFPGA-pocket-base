@@ -5,6 +5,9 @@ proc generateBuildID_MIF {} {
 	set buildTime [ clock format [ clock seconds ] -format %H%M%S ]
 	set buildUnique [expr {int(rand()*(4294967295))}]
 
+    set_global_assignment -name VERILOG_MACRO "BUILD_DATE" -remove
+    set_global_assignment -name VERILOG_MACRO "BUILD_TIME" -remove
+    set_global_assignment -name VERILOG_MACRO "BUILD_UNIQUE_ID" -remove
     set_global_assignment -name VERILOG_MACRO "BUILD_DATE=$buildDate"
     set_global_assignment -name VERILOG_MACRO "BUILD_TIME=$buildTime"
     set_global_assignment -name VERILOG_MACRO "BUILD_UNIQUE_ID=$buildUnique"

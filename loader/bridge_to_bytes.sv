@@ -12,6 +12,9 @@ module bridge_to_bytes(
     `STATIC_ASSERT(bridge.data_width == 32, bridge data width must be 32)
     `STATIC_ASSERT(mem.data_width    ==  8, mem data width must be 8)
 
+    localparam int mem_addr_width = $bits(mem.addr);
+    typedef logic[mem_addr_width-1:0] mem_addr_t;
+
     logic idle;
     logic [31:2] bridge_addr_ff;
     logic [31:0] bridge_wr_data_ff;
@@ -91,7 +94,7 @@ module bridge_to_bytes(
     end
 
     always_comb begin
-        mem.addr    = {bridge_addr_ff, counter};
+        mem.addr    = mem_addr_t'({bridge_addr_ff, counter});
         mem.wr_data = bridge_wr_data_ff[31:24];
     end
 
