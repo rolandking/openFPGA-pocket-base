@@ -5,12 +5,23 @@ proc generateBuildID_MIF {} {
 	set buildTime [ clock format [ clock seconds ] -format %H%M%S ]
 	set buildUnique [expr {int(rand()*(4294967295))}]
 
-    set_global_assignment -name VERILOG_MACRO "BUILD_DATE" -remove
-    set_global_assignment -name VERILOG_MACRO "BUILD_TIME" -remove
-    set_global_assignment -name VERILOG_MACRO "BUILD_UNIQUE_ID" -remove
-    set_global_assignment -name VERILOG_MACRO "BUILD_DATE=$buildDate"
-    set_global_assignment -name VERILOG_MACRO "BUILD_TIME=$buildTime"
-    set_global_assignment -name VERILOG_MACRO "BUILD_UNIQUE_ID=$buildUnique"
+	# Create a Verilog file for output
+    file mkdir output_files
+	set outputFileName "output_files/id_pkg.sv"
+	set outputFile [open $outputFileName "w"]
+
+	# Output the Verilog source
+	puts $outputFile "// Build ID package"
+	puts $outputFile ""
+	puts $outputFile "package id_pkg;"
+	puts $outputFile ""
+	puts $outputFile "    parameter int build_date   = 32'h$buildDate;"
+	puts $outputFile "    parameter int build_time   = 32'h$buildTime;"
+	puts $outputFile "    parameter int build_unique = 32'd$buildUnique;"
+	puts $outputFile ""
+	puts $outputFile "endpackage"
+	puts $outputFile ""
+	close $outputFile
 
 	post_message "APF core build date/time generated: date:$buildDate / time: $buildTime / ID: $buildUnique"
 }

@@ -1,10 +1,6 @@
 `timescale 1ns/1ps
 
-module bridge_id#(
-    parameter int BUILD_DATE = `BUILD_DATE,
-    parameter int BUILD_TIME = `BUILD_TIME,
-    parameter int BUILD_UNIQUE_ID = `BUILD_UNIQUE_ID
-)(
+module bridge_id (
     bus_if bridge
 );
 
@@ -15,13 +11,13 @@ module bridge_id#(
 
         case(bridge.addr[3:2])
             2'b00: begin
-                bridge.rd_data <= BUILD_DATE;
+                bridge.rd_data <= id_pkg::build_date;
             end
             2'b01: begin
-                bridge.rd_data <= BUILD_TIME;
+                bridge.rd_data <= id_pkg::build_time;
             end
             2'b10: begin
-                bridge.rd_data <= BUILD_UNIQUE_ID;
+                bridge.rd_data <= id_pkg::build_unique;
             end
             default: begin
             end
