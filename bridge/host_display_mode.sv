@@ -6,20 +6,38 @@ module host_display_mode#(
     input logic                   clk,
     host_notify_display_mode_if   host_notify_display_mode,
 
-    output pocket::display_mode_e display_mode,
-    output logic                  grayscale
+    video_if                      video_in,
+    video_if                      video_out
 );
 
+    logic grayscale = 1'b0;
     always_ff @(posedge clk) begin
         if(host_notify_display_mode.valid) begin
-            display_mode <= host_notify_display_mode.param.display_mode;
             grayscale    <= host_notify_display_mode.param.grayscale && supports_grayscale;
-
             host_notify_display_mode.done <= '1;
         end else begin
             host_notify_display_mode.done <= '0;
         end
     end
+
+    generate
+        if(supports_grayscale) begin : gen_grayscale_convert
+            logic [9:0] video_sum;
+            always_comb begin
+                `VIDEO_CONNECT_IN_OUT(video_in, video_out)
+                video_sum = video_in.rgb.red + video_in.rgb.red + video_in.rgb.green + video_in.rgb.blue;
+                if(grayscale) begin
+                    video_out.rgb.red   = video_sum[9:2];
+                    video_out.rgb.green = video_sum[9:2];
+                    video_out.rgb.blue  = video_sum[9:2];
+                end
+            end
+        end else begin : gen_no_grayscale
+            always_comb begin
+                `VIDEO_CONNECT_IN_OUT(video_in, video_out)
+            end
+        end
+    endgenerate
 
     always_comb begin
         host_notify_display_mode.response.affirm_grayscale = grayscale ?

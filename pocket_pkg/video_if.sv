@@ -1,9 +1,10 @@
 `timescale 1ns/1ps
 
-interface video_if;
+interface video_if(
+    output logic rgb_clk,
+    output logic rgb_clk_90
+);
 
-    logic         rgb_clock;
-    logic         rgb_clock_90;
     pocket::rgb_t rgb;
     logic         de;
     logic         skip;
@@ -11,19 +12,18 @@ interface video_if;
     logic         hs;
 
     function automatic tie_off();
-        rgb_clock    = '0;
-        rgb_clock_90 = '0;
-        rgb          = '0;
-        de           = '0;
-        skip         = '0;
-        vs           = '0;
+        rgb_clk    = '0;
+        rgb_clk_90 = '0;
+        rgb        = '0;
+        de         = '0;
+        skip       = '0;
+        vs         = '0;
+        hs         = '0;
     endfunction
 
 endinterface
 
 module video_connect (
-    output wire          rgb_clock,
-    output wire          rgb_clock_90,
     output pocket::rgb_t rgb,
     output wire          de,
     output wire          skip,
@@ -33,8 +33,6 @@ module video_connect (
     video_if        video
 );
     always_comb begin
-        rgb_clock    = video.rgb_clock;
-        rgb_clock_90 = video.rgb_clock_90;
         rgb          = video.rgb;
         de           = video.de;
         skip         = video.skip;
@@ -43,6 +41,13 @@ module video_connect (
     end
 
 endmodule
+
+`define VIDEO_CONNECT_IN_OUT( _i, _o)  \
+    _o.rgb          = _i.rgb;          \
+    _o.de           = _i.de;           \
+    _o.skip         = _i.skip;         \
+    _o.vs           = _i.vs;           \
+    _o.hs           = _i.hs;           \
 
 /*
  *   74mhz / 4 / 50Hz = 370,000
@@ -54,14 +59,12 @@ endmodule
  */
 
 module video_dummy(
-    input wire video_rgb_clk,
-    input wire video_rgb_clk_90,
     video_if   video
 );
     logic [9:0] hcount;
     logic [8:0] vcount;
 
-    always_ff @(posedge video_rgb_clk) begin
+    always_ff @(posedge video.rgb_clk) begin
         if(hcount == 10'd739) begin
             hcount <= '0;
             if(vcount == 9'd499) begin
@@ -75,7 +78,7 @@ module video_dummy(
     end
 
     pocket::rgb_t rgb_out;
-    always_ff @(posedge video_rgb_clk) begin
+    always_ff @(posedge video.rgb_clk) begin
         if(video.de) begin
             if(rgb_out.red >=254) begin
                 if(rgb_out.green >= 254) begin
@@ -95,13 +98,11 @@ module video_dummy(
     end
 
     always_comb begin
-        video.rgb_clock    = video_rgb_clk;
-        video.rgb_clock_90 = video_rgb_clk_90;
-        video.hs           = hcount == 9'd50;
-        video.vs           = vcount == 8'd50;
-        video.de           = (hcount >= 10'd100 && hcount < 10'd500 && vcount >= 9'd100 && vcount < 9'd460);
-        video.skip         = 0;
-        video.rgb          = video.de ? rgb_out : '0;
+        video.hs    = hcount == 9'd50;
+        video.vs    = vcount == 8'd50;
+        video.de    = (hcount >= 10'd100 && hcount < 10'd500 && vcount >= 9'd100 && vcount < 9'd460);
+        video.skip  = 0;
+        video.rgb   = video.de ? rgb_out : '0;
     end
 
 endmodule

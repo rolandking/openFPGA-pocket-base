@@ -377,10 +377,11 @@ module core_top (
         .sram   (sram)
     );
 
-    video_if video();
+    video_if video(
+        .rgb_clk       (video_rgb_clock),
+        .rgb_clk_90    (video_rgb_clock_90)
+    );
     video_connect vc (
-        .rgb_clock     (video_rgb_clock   ),
-        .rgb_clock_90  (video_rgb_clock_90),
         .rgb           (video_rgb         ),
         .de            (video_de          ),
         .skip          (video_skip        ),
