@@ -1,8 +1,8 @@
 `timescale 1ns/1ps
 
 interface video_if(
-    output logic rgb_clk,
-    output logic rgb_clk_90
+    output logic rgb_clock,
+    output logic rgb_clock_90
 );
 
     pocket::rgb_t rgb;
@@ -12,8 +12,8 @@ interface video_if(
     logic         hs;
 
     function automatic tie_off();
-        rgb_clk    = '0;
-        rgb_clk_90 = '0;
+        rgb_clock    = '0;
+        rgb_clock_90 = '0;
         rgb        = '0;
         de         = '0;
         skip       = '0;
@@ -64,7 +64,7 @@ module video_dummy(
     logic [9:0] hcount;
     logic [8:0] vcount;
 
-    always_ff @(posedge video.rgb_clk) begin
+    always_ff @(posedge video.rgb_clock) begin
         if(hcount == 10'd739) begin
             hcount <= '0;
             if(vcount == 9'd499) begin
@@ -78,7 +78,7 @@ module video_dummy(
     end
 
     pocket::rgb_t rgb_out;
-    always_ff @(posedge video.rgb_clk) begin
+    always_ff @(posedge video.rgb_clock) begin
         if(video.de) begin
             if(rgb_out.red >=254) begin
                 if(rgb_out.green >= 254) begin

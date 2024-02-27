@@ -378,8 +378,8 @@ module core_top (
     );
 
     video_if video(
-        .rgb_clk       (video_rgb_clock),
-        .rgb_clk_90    (video_rgb_clock_90)
+        .rgb_clock       (video_rgb_clock),
+        .rgb_clock_90    (video_rgb_clock_90)
     );
     video_connect vc (
         .rgb           (video_rgb         ),
