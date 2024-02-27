@@ -23,7 +23,7 @@ package pocket;
         controller_docked_analogue    = 4'd3,
         controller_docked_keyboard    = 4'd4,
         controller_docked_mouse       = 4'd5
-    } controller_type_t;
+    } controller_type_e;
 
     /*
      *              (X)
@@ -31,7 +31,7 @@ package pocket;
      *              (B)
     */
     typedef struct packed {
-        controller_type_t   controller_type;
+        controller_type_e   controller_type;
         logic [11:0]        _unused;
         logic               face_start;
         logic               face_select;
@@ -72,5 +72,23 @@ package pocket;
     } bridge_addr_range_t;
 
     typedef logic [15:0] slot_id_t;
+
+    typedef enum logic [7:0] {
+        display_mode_none          = 8'h00,
+        display_mode_crt_trinitron = 8'h10,
+        display_mode_grayscale_lcd = 8'h20,
+        display_mode_GB_dmg        = 8'h21,
+        display_mode_GBP           = 8'h22,
+        display_mode_GPB_light     = 8'h23,
+        display_mode_refective_lcd = 8'h30,
+        display_mode_GBC_lcd       = 8'h31,
+        display_mode_GBC_lcd_plus  = 8'h32,
+        display_mode_backlit_color = 8'h40,
+        display_mode_GBA_lcd       = 8'h41,
+        display_mode_GBA_SP_101    = 8'h42,
+        display_mode_GG            = 8'h51,
+        display_mode_GG_plus       = 8'h52,
+        display_mode_pinball_neon  = 8'he0
+    } display_mode_e;
 
  endpackage

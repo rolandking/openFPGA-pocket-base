@@ -387,8 +387,8 @@ package bridge_pkg;
     /////////////////////////////////////////////////////////
 
     typedef struct packed {
-        logic [15:8]   display_mode;
-        logic          grayscale;
+        pocket::display_mode_e display_mode;
+        logic                  grayscale;
     } host_notify_display_mode_param_t;
 
     function automatic host_notify_display_mode_param_t host_notify_display_mode_param_extract(
@@ -396,7 +396,7 @@ package bridge_pkg;
     );
         host_notify_display_mode_param_t retval;
         // skip 16 : 127 - 112
-        retval.display_mode = in[111 : 104];
+        retval.display_mode = pocket::display_mode_e'(in[111 : 104]);
         // skip  7 : 103 - 97
         retval.grayscale    = in[96];
         // skip 96 : 95  -  0
@@ -404,19 +404,21 @@ package bridge_pkg;
         return retval;
     endfunction
 
+    typedef enum logic [15:0] {
+        grayscale_not_supported = 16'h0,
+        grayscale_supported     = 16'h444d
+    } host_notify_grayscale_affirm_e;
+
     typedef struct packed {
-        logic [15:0]   affirm_greyscale;
+        host_notify_grayscale_affirm_e affirm_grayscale;
     } host_notify_display_mode_response_t;
 
     function automatic bridge_param_t host_notify_display_mode_response_expand(
         host_notify_display_mode_response_t in
     );
-        return {16'h0, in.affirm_greyscale, 96'h0};
+        return {16'h0, in.affirm_grayscale, 96'h0};
 
     endfunction
-
-    parameter logic [15:0] affirm_greyscale_allow = 16'h444d;
-
 
     /////////////////////////////////////////////////////////
     // core commands
