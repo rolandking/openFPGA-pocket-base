@@ -62,24 +62,30 @@ module video_oneway(
 endmodule
 
 /*
- *   74mhz / 4 / 50Hz = 370,000
- *   = 740 * 500
- *
  *   make the display 400 x 360
  *   put HS at 50, VS at (0,50)
  *   DE = (HS >= 100 & HS < 500) & (VS >= 100 && VS < 460)
+ *
+ *   arrange x_dots and y_dots so that
+ *   x_dots * y_dots * screen_frequency = rgb_clock frequency
  */
 
-module video_dummy(
+module video_dummy#(
+    parameter int x_dots = 740,
+    parameter int y_dots = 500
+)(
     video_if   video
 );
-    logic [9:0] hcount;
-    logic [8:0] vcount;
+    // counts to 4096 which should be plenty
+    typedef logic [11:0] count_t;
+
+    count_t hcount;
+    count_t vcount;
 
     always_ff @(posedge video.rgb_clock) begin
-        if(hcount == 10'd739) begin
+        if(hcount == count_t'(x_dots-1)) begin
             hcount <= '0;
-            if(vcount == 9'd499) begin
+            if(vcount == count_t'(y_dots-1)) begin
                 vcount <= '0;
             end else begin
                 vcount <= vcount + 9'h1;
