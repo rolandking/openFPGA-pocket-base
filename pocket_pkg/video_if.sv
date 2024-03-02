@@ -49,6 +49,18 @@ endmodule
     _o.vs           = _i.vs;           \
     _o.hs           = _i.hs;           \
 
+
+module video_oneway(
+    video_if in,
+    video_if out
+);
+    bidir_oneway#(.width($bits(in.rgb )))rgb_oneway (.in(in.rgb ),.out(out.rgb ));
+    bidir_oneway#(.width($bits(in.de  )))de_oneway  (.in(in.de  ),.out(out.de  ));
+    bidir_oneway#(.width($bits(in.skip)))skip_oneway(.in(in.skip),.out(out.skip));
+    bidir_oneway#(.width($bits(in.vs  )))vs_oneway  (.in(in.vs  ),.out(out.vs  ));
+    bidir_oneway#(.width($bits(in.hs  )))hs_oneway  (.in(in.hs  ),.out(out.hs  ));
+endmodule
+
 /*
  *   74mhz / 4 / 50Hz = 370,000
  *   = 740 * 500

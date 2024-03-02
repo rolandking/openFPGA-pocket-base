@@ -10,6 +10,18 @@ module host_display_mode#(
     video_if                      video_out
 );
 
+    video_if in_internal(), out_internal();
+
+    video_oneway in_oneway(
+        .in     (video_in   ),
+        .out    (in_internal)
+    );
+
+    video_oneway out_oneway(
+        .in     (out_internal),
+        .out    (video_out)
+    );
+
     logic grayscale = 1'b0;
     always_ff @(posedge clk) begin
         if(host_notify_display_mode.valid) begin
@@ -24,17 +36,17 @@ module host_display_mode#(
         if(supports_grayscale) begin : gen_grayscale_convert
             logic [9:0] video_sum;
             always_comb begin
-                `VIDEO_CONNECT_IN_OUT(video_in, video_out)
-                video_sum = video_in.rgb.red + video_in.rgb.red + video_in.rgb.green + video_in.rgb.blue;
+                `VIDEO_CONNECT_IN_OUT(in_internal, out_internal)
+                video_sum = in_internal.rgb.red + in_internal.rgb.red + in_internal.rgb.green + in_internal.rgb.blue;
                 if(grayscale) begin
-                    video_out.rgb.red   = video_sum[9:2];
-                    video_out.rgb.green = video_sum[9:2];
-                    video_out.rgb.blue  = video_sum[9:2];
+                    out_internal.rgb.red   = video_sum[9:2];
+                    out_internal.rgb.green = video_sum[9:2];
+                    out_internal.rgb.blue  = video_sum[9:2];
                 end
             end
         end else begin : gen_no_grayscale
             always_comb begin
-                `VIDEO_CONNECT_IN_OUT(video_in, video_out)
+                `VIDEO_CONNECT_IN_OUT(in_internal, out_internal)
             end
         end
     endgenerate

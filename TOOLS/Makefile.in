@@ -60,13 +60,18 @@ TGT6 = $(call newpath,$(SRC6))
 $(call newpath,$(SRC6)):$(SRC6)
 	cp $< $@
 	 
+# Cores/_CORE_/*.bin
+SRC7 = $(DISTDIR)/Cores/_CORE_
+TGT7 = $(call newpath,$(wildcard $(SRC7)/*.bin))
+$(call newpath,$(SRC7))/%:$(SRC7)/%
+	cp $< $@
+	
 # core bitfile
-SRC7 = src/fpga/output_files/ap_core.rbf
-TGT7 = $(ROOT)/Cores/$(COREDIR)/$(RBFNAME)
+SRC8 = src/fpga/output_files/ap_core.rbf
+TGT8 = $(ROOT)/Cores/$(COREDIR)/$(RBFNAME)
 
-
-$(TGT7): $(SRC7)
-	$(REVERSE_BITS) $(SRC7) $(TGT7)
+$(TGT8): $(SRC8)
+	$(REVERSE_BITS) $(SRC8) $(TGT8)
 
 print:
 	echo "COREDIR: $(COREDIR)"
