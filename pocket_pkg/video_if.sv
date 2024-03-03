@@ -67,17 +67,27 @@ endmodule
  *   DE = (HS >= 100 & HS < 500) & (VS >= 100 && VS < 460)
  *
  *   arrange x_dots and y_dots so that
- *   x_dots * y_dots * screen_frequency = rgb_clock frequency
+ *   x_dots * y_dots * screen_frequency * duty = rgb_clock frequency
  */
 
 module video_dummy#(
+    // total clock cycles between hsyncs
     parameter int x_dots = 740,
+    // total hsyncs between vsync - so framerate = clock_freq / x_dots / y_dots
     parameter int y_dots = 500,
+
+    // total x_pixels shown, the number active is x_px * duty
     parameter int x_px   = 400,
-    parameter int y_px   = 360
+
+    // total lines shown
+    parameter int y_px   = 360,
+
+    // number of cycles per x_px above
+    parameter int duty   = 1        // how many clock cycles to one enabled pixel
 )(
     video_if   video
 );
+
     // video should be base grey (127,127,127)
     // with a 2px white line around the border,
     // a 2px blue line inside that
@@ -92,13 +102,23 @@ module video_dummy#(
 
     typedef logic [11:0] count_t;
 
+    logic pulse;
+    pulse_generator#(
+        .BEATS  (duty)
+    ) p_gen (
+        .clk    (video.rgb_clock),
+        .pulse
+    );
+
     count_t hcount;
     count_t vcount;
+    count_t xcount;
 
     // basic dot counts
     always_ff @(posedge video.rgb_clock) begin
         if(hcount == count_t'(x_dots-1)) begin
             hcount <= '0;
+            xcount <= '0;
             if(vcount == count_t'(y_dots-1)) begin
                 vcount <= '0;
             end else begin
@@ -106,6 +126,7 @@ module video_dummy#(
             end
         end else begin
             hcount <= hcount + 10'h1;
+            xcount <= pulse ? (xcount + 10'h1) : xcount;
         end
     end
 
@@ -123,7 +144,7 @@ module video_dummy#(
     pocket::rgb_t square_rgb;
     logic [5:0] xoff, yoff;
     always_comb begin
-        xoff = hcount - sq_start_x;
+        xoff = xcount - sq_start_x;
         yoff = vcount - sq_start_y;
 
         square_rgb       = '0;
@@ -138,19 +159,19 @@ module video_dummy#(
         rgb_out = '{red:8'd127,green:8'd127,blue:8'd127};
 
         // if we're within 8px of either edge then green
-        if((hcount < (x_start+8)) || (hcount >= (x_end - 8)) || (vcount < (y_start+8)) || (vcount >= (y_end-8))) begin
+        if((xcount < (x_start+8)) || (xcount >= (x_end - 8)) || (vcount < (y_start+8)) || (vcount >= (y_end-8))) begin
             rgb_out = '{red:8'd0, green:8'd255, blue: 8'd0};
         end
-        if((hcount < (x_start+6)) || (hcount >= (x_end - 6)) || (vcount < (y_start+6)) || (vcount >= (y_end-6))) begin
+        if((xcount < (x_start+6)) || (xcount >= (x_end - 6)) || (vcount < (y_start+6)) || (vcount >= (y_end-6))) begin
             rgb_out = '{red:8'd0, green:8'd0, blue: 8'd255};
         end
-        if((hcount < (x_start+4)) || (hcount >= (x_end - 4)) || (vcount < (y_start+4)) || (vcount >= (y_end-4))) begin
+        if((xcount < (x_start+4)) || (xcount >= (x_end - 4)) || (vcount < (y_start+4)) || (vcount >= (y_end-4))) begin
             rgb_out = '{red:8'd255, green:8'd0, blue: 8'd0};
         end
-        if((hcount < (x_start+2)) || (hcount >= (x_end - 2)) || (vcount < (y_start+2)) || (vcount >= (y_end-2))) begin
+        if((xcount < (x_start+2)) || (xcount >= (x_end - 2)) || (vcount < (y_start+2)) || (vcount >= (y_end-2))) begin
             rgb_out = '{red:8'd255, green:8'd255, blue: 8'd255};
         end
-        if((hcount >= sq_start_x) && (hcount < sq_end_x) && (vcount >= sq_start_y) && (vcount < sq_end_y)) begin
+        if((xcount >= sq_start_x) && (xcount < sq_end_x) && (vcount >= sq_start_y) && (vcount < sq_end_y)) begin
             rgb_out = square_rgb;
         end
     end
@@ -158,8 +179,8 @@ module video_dummy#(
     always_comb begin
         video.hs    = hcount == hs;
         video.vs    = vcount == vs;
-        video.de    = (hcount >= x_start && hcount < x_end && vcount >= y_start && vcount < y_end);
-        video.skip  = 0;
+        video.de    = (xcount >= x_start && xcount < x_end && vcount >= y_start && vcount < y_end);
+        video.skip  = ~pulse && video.de;
         video.rgb   = video.de ? rgb_out : '0;
     end
 
