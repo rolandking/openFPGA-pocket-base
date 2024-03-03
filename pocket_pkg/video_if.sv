@@ -72,16 +72,30 @@ endmodule
 
 module video_dummy#(
     parameter int x_dots = 740,
-    parameter int y_dots = 500
+    parameter int y_dots = 500,
+    parameter int x_px   = 400,
+    parameter int y_px   = 360
 )(
     video_if   video
 );
-    // counts to 4096 which should be plenty
+    // video should be base grey (127,127,127)
+    // with a 2px white line around the border,
+    // a 2px blue line inside that
+    // a 2px red line inside that and
+    // a 2px green line inside that.
+    //
+    // centered should be a 64x64 color square
+    // where the colour is red on x, green on y
+    // and blue is the max of both of them
+    //
+    // put HS and VS at a count of 10
+
     typedef logic [11:0] count_t;
 
     count_t hcount;
     count_t vcount;
 
+    // basic dot counts
     always_ff @(posedge video.rgb_clock) begin
         if(hcount == count_t'(x_dots-1)) begin
             hcount <= '0;
@@ -95,30 +109,56 @@ module video_dummy#(
         end
     end
 
+    localparam int hs      = 10;
+    localparam int vs      = 10;
+    localparam int x_start = hs + 10;
+    localparam int y_start = vs + 10;
+    localparam int x_end   = x_start + x_px;
+    localparam int y_end   = y_start + y_px;
+    localparam int sq_start_x = x_start + x_px / 2 - 32;
+    localparam int sq_end_x   = sq_start_x + 64;
+    localparam int sq_start_y = y_start + y_px / 2 - 32;
+    localparam int sq_end_y   = sq_start_y + 64;
+
+    pocket::rgb_t square_rgb;
+    logic [5:0] xoff, yoff;
+    always_comb begin
+        xoff = hcount - sq_start_x;
+        yoff = vcount - sq_start_y;
+
+        square_rgb       = '0;
+        square_rgb.red   = xoff << 2;
+        square_rgb.green = yoff << 2;
+        square_rgb.blue  = (xoff > yoff) ? (xoff << 2) : (yoff << 2);
+    end
+
     pocket::rgb_t rgb_out;
-    always_ff @(posedge video.rgb_clock) begin
-        if(video.de) begin
-            if(rgb_out.red >=254) begin
-                if(rgb_out.green >= 254) begin
-                    if(rgb_out.blue >= 254) begin
-                    end else begin
-                        rgb_out.blue <= rgb_out.blue + 8'd2;
-                    end
-                end else begin
-                    rgb_out.green <= rgb_out.green + 8'd2;
-                end
-            end else begin
-                rgb_out.red <= rgb_out.red + 8'd2;
-            end
-        end else begin
-            rgb_out <= '0;
+    always_comb begin
+        // start with base case grey
+        rgb_out = '{red:8'd127,green:8'd127,blue:8'd127};
+
+        // if we're within 8px of either edge then green
+        if((hcount < (x_start+8)) || (hcount >= (x_end - 8)) || (vcount < (y_start+8)) || (vcount >= (y_end-8))) begin
+            rgb_out = '{red:8'd0, green:8'd255, blue: 8'd0};
+        end
+        if((hcount < (x_start+6)) || (hcount >= (x_end - 6)) || (vcount < (y_start+6)) || (vcount >= (y_end-6))) begin
+            rgb_out = '{red:8'd0, green:8'd0, blue: 8'd255};
+        end
+        if((hcount < (x_start+4)) || (hcount >= (x_end - 4)) || (vcount < (y_start+4)) || (vcount >= (y_end-4))) begin
+            rgb_out = '{red:8'd255, green:8'd0, blue: 8'd0};
+        end
+        if((hcount < (x_start+2)) || (hcount >= (x_end - 2)) || (vcount < (y_start+2)) || (vcount >= (y_end-2))) begin
+            rgb_out = '{red:8'd255, green:8'd255, blue: 8'd255};
+        end
+        if((hcount >= sq_start_x) && (hcount < sq_end_x) && (vcount >= sq_start_y) && (vcount < sq_end_y)) begin
+            rgb_out = square_rgb;
         end
     end
 
     always_comb begin
-        video.hs    = hcount == 9'd50;
-        video.vs    = vcount == 8'd50;
-        video.de    = (hcount >= 10'd100 && hcount < 10'd500 && vcount >= 9'd100 && vcount < 9'd460);
+        video.hs    = hcount == hs;
+        video.vs    = vcount == vs;
+        video.de    = (hcount >= x_start && hcount < x_end && vcount >= y_start && vcount < y_end);
         video.skip  = 0;
         video.rgb   = video.de ? rgb_out : '0;
     end
