@@ -70,20 +70,9 @@ $(call newpath,$(SRC7))/%:$(SRC7)/%
 SRC8 = src/fpga/output_files/ap_core.rbf
 TGT8 = $(ROOT)/Cores/$(COREDIR)/$(RBFNAME)
 
-<<<<<<< Updated upstream
 $(TGT8): $(SRC8)
 	$(REVERSE_BITS) $(SRC8) $(TGT8)
-=======
-# Cores/_CORE_/*.bin
-SRC8 = $(DISTDIR)/Cores/_CORE_
-TGT8 = $(call newpath,$(wildcard $(SRC1)/*.bin))
-$(call newpath,$(SRC8))/%:$(SRC8)/%
-	cp $< $@
-
-$(TGT7): $(SRC7)
-	$(REVERSE_BITS) $(SRC7) $(TGT7)
->>>>>>> Stashed changes
-
+	
 print:
 	echo "COREDIR: $(COREDIR)"
 	echo $(TGT6)
