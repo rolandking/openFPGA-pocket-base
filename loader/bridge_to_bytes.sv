@@ -2,7 +2,12 @@
 // take the input from bridge which is a 32 bit word and write it out 8 bits
 // at a time to memory, do the same for reads and put the 32 bits back together
 
-module bridge_to_bytes(
+module bridge_to_bytes#(
+    // how many cycles between the byte reads and writes
+    // usually 1 but for memory which doesn't support more
+    // than one transaction at a time (eg psram) increase
+    parameter int CYCLES = 1
+)(
     // 32-bit data + address, address always 0bxxxxx... xxx00
     bus_if  bridge,
     // 8-bit data
@@ -30,14 +35,27 @@ module bridge_to_bytes(
         WAIT_RD  = 2'b10
     } state_e;
 
-    state_e state = IDLE;
+    state_e state           = IDLE;
+    logic   start_cycle;
+    logic   shift_en;
+
+    pulse_generator#(
+        .BEATS       (CYCLES),
+        .PULSE_START (1'b1)
+    ) pulse_gen (
+        .clk    (bridge.clk),
+        .pulse  (shift_en),
+        .reset  (start_cycle)
+    );
 
     always @(posedge bridge.clk) begin
 
         // shift and count on every cycle, overridden for a new
         // read or write command
-        bridge_wr_data_ff[31:8] <= bridge_wr_data_ff[23:0];
-        counter                 <= counter + 2'd1;
+        if(shift_en) begin
+            bridge_wr_data_ff[31:8] <= bridge_wr_data_ff[23:0];
+            counter                 <= counter + 2'd1;
+        end
 
         // shift valid read data into the 32bit buffer
         // should not need to gate with rd_bits[0] but for safety
@@ -48,7 +66,7 @@ module bridge_to_bytes(
 
         case(state)
             IDLE: begin
-                if(bridge.rd || bridge.wr) begin
+                if(start_cycle) begin
                     bridge_addr_ff    <= bridge.addr[31:2];
                     bridge_wr_data_ff <= bridge.wr_data;
                     is_read           <= bridge.rd;
@@ -58,7 +76,7 @@ module bridge_to_bytes(
                 end
             end
             ADDR_OUT: begin
-                if(counter == 2'b11) begin
+                if( (counter == 2'b11) && shift_en )begin
                     state <= is_read ? WAIT_RD : IDLE;
                 end
             end
@@ -77,13 +95,15 @@ module bridge_to_bytes(
         mem.rd               = '0;
         mem.wr               = '0;
         bridge.rd_data_valid = '0;
+        start_cycle          = '0;
 
         case(state)
             IDLE: begin
+                start_cycle = (bridge.rd || bridge.wr);
             end
             ADDR_OUT: begin
-                mem.rd =  is_read;
-                mem.wr = ~is_read;
+                mem.rd =  is_read && shift_en;
+                mem.wr = ~is_read && shift_en;
             end
             WAIT_RD: begin
                 bridge.rd_data_valid = rd_bits[0];
