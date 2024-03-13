@@ -399,34 +399,34 @@ module core_top (
         .audio    (audio     )
     );
 
-    controller_if controller[1:4]();
+    controller_t controllers[1:4];
 
     controller_connect con1(
         .key         (cont1_key),
         .joy         (cont1_joy),
         .trig        (cont1_trig),
-        .controller  (controller[1])
+        .controller  (controllers[1])
     );
 
     controller_connect con2(
         .key         (cont2_key),
         .joy         (cont2_joy),
         .trig        (cont2_trig),
-        .controller  (controller[2])
+        .controller  (controllers[2])
     );
 
     controller_connect con3(
         .key         (cont3_key),
         .joy         (cont3_joy),
         .trig        (cont3_trig),
-        .controller  (controller[3])
+        .controller  (controllers[3])
     );
 
     controller_connect con4(
         .key         (cont4_key),
         .joy         (cont4_joy),
         .trig        (cont4_trig),
-        .controller  (controller[4])
+        .controller  (controllers[4])
     );
 
     /*
@@ -477,7 +477,7 @@ module core_top (
         .bridge_endian_little,
         .bridge,
 
-        .controller
+        .controllers
     );
 
     endmodule
