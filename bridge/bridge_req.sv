@@ -143,7 +143,7 @@ module bridge_req (
 
     always_comb begin
         // nothing has a result
-        req.result                      = '0;
+        //req.result                      = '0;
 
         // default this to zero
         req.word                        = '0;
