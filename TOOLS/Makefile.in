@@ -3,6 +3,7 @@
 CWD := $(CURDIR)
 JSON_READER := $(CWD)/$(POCKET_TOOLS)/json_reader/json_reader.py
 REVERSE_BITS := $(CWD)/$(POCKET_TOOLS)/reverse_bits/reverse_bits.py
+TREE_BUILDER := $(CWD)/$(POCKET_TOOLS)/tree_builder/tree_builder.py
 ZIP := /usr/bin/zip
 
 # set -e ROOT=/media/rols/pocket to write files directly with make distrib
@@ -11,93 +12,32 @@ ROOT := ROOT
 DISTDIR := dist
 
 AUTHORNAME := $(shell $(JSON_READER) dist/Cores/_CORE_/core.json core.metadata.author)
-CORENAME   := $(shell $(JSON_READER) dist/Cores/_CORE_/core.json core.metadata.shortname)
+SHORTNAME  := $(shell $(JSON_READER) dist/Cores/_CORE_/core.json core.metadata.shortname)
 PLATFORM   := $(shell $(JSON_READER) dist/Cores/_CORE_/core.json core.metadata.platform_ids.0)
 RBFNAME    := $(shell $(JSON_READER) dist/Cores/_CORE_/core.json core.cores.0.filename)
 
-COREDIR = $(AUTHORNAME).$(CORENAME)
+COREDIR = $(AUTHORNAME).$(SHORTNAME)
 
-# default target 
+# default target
 zip: ROOT.zip
-	
-# go through the directories
 
-newpath = $(subst $(DISTDIR),$(ROOT),$(subst _PLATFORM_,$(PLATFORM),$(subst _CORE_,$(COREDIR),$1)))
+SRCBITFILE = src/fpga/output_files/ap_core.rbf
+TGTBITFILE = $(ROOT)/Cores/$(COREDIR)/$(RBFNAME)
 
-# Cores/_CORE_/*.json
-SRC1 = $(DISTDIR)/Cores/_CORE_
-TGT1 = $(call newpath,$(wildcard $(SRC1)/*.json))
-$(call newpath,$(SRC1))/%:$(SRC1)/%
-	cp $< $@
+$(TGTBITFILE): $(SRCBITFILE)
+	$(REVERSE_BITS) $(SRCBITFILE) $(TGTBITFILE)
 
-# Assets/_none/_CORE_/*
-SRC2 = $(DISTDIR)/Assets/_none/_CORE_
-TGT2 = $(call newpath,$(wildcard $(SRC2)/*))
-$(call newpath,$(SRC2))/%:$(SRC2)/%
-	cp $< $@
-
-# Assets/_PLATFORM_/common/*
-SRC3 = $(DISTDIR)/Assets/_PLATFORM_/common
-TGT3 = $(call newpath,$(wildcard $(SRC3)/*))
-$(call newpath,$(SRC3))/%:$(SRC3)/%
-	cp $< $@
-
-# Assets/_PLATFORM_/_CORE_/*
-SRC4 = $(DISTDIR)/Assets/_PLATFORM_/_CORE_
-TGT4 = $(call newpath,$(wildcard $(SRC4)/*))
-$(call newpath,$(SRC4))/%:$(SRC4)/%
-	cp $< $@
-
-# Platforms/_PLATFORM_.json
-SRC5 = $(DISTDIR)/Platforms/_PLATFORM_.json
-TGT5 = $(call newpath,$(SRC5))
-$(call newpath,$(SRC5)):$(SRC5)
-	cp $< $@
-
-# Platforms/_images/_PLATFORM_.bin
-SRC6 = $(DISTDIR)/Platforms/_images/_PLATFORM_.bin
-TGT6 = $(call newpath,$(SRC6))
-$(call newpath,$(SRC6)):$(SRC6)
-	cp $< $@
-	 
-# Cores/_CORE_/*.bin
-SRC7 = $(DISTDIR)/Cores/_CORE_
-TGT7 = $(call newpath,$(wildcard $(SRC7)/*.bin))
-$(call newpath,$(SRC7))/%:$(SRC7)/%
-	cp $< $@
-	
-# core bitfile
-SRC8 = src/fpga/output_files/ap_core.rbf
-TGT8 = $(ROOT)/Cores/$(COREDIR)/$(RBFNAME)
-
-$(TGT8): $(SRC8)
-	$(REVERSE_BITS) $(SRC8) $(TGT8)
-	
-print:
-	echo "COREDIR: $(COREDIR)"
-	echo $(TGT6)
-
-clean: 
+clean:
 	rm -rf $(ROOT)
 	rm -rf ROOT.zip
 
-$(ROOT): 
-	mkdir -p $(call newpath,$(SRC1))
-	mkdir -p $(call newpath,$(SRC2))
-	mkdir -p $(call newpath,$(SRC3))
-	mkdir -p $(call newpath,$(SRC4))
-	mkdir -p $(dir $(TGT5))
-	mkdir -p $(dir $(TGT6))
+treebuild:
+	$(TREE_BUILDER) --template dist --target ROOT --platform $(PLATFORM) --author $(AUTHORNAME) --shortname $(SHORTNAME) --write --delete
 
-distrib: $(ROOT) $(TGT1) $(TGT2) $(TGT3) $(TGT4) $(TGT5) $(TGT6) $(TGT7) $(TGT8)
+distrib: treebuild $(TGTBITFILE)
 
 ROOT.zip: distrib
 	cd ROOT; $(ZIP) -r ../ROOT.zip *
 
-
 .DUMMY: zip distrib
-
-
-
-
-
+.PHONY: treebuild
