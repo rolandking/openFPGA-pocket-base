@@ -6,13 +6,14 @@
 // 2. if this is being written with size zero
 
 module bridge_dataslot_find_and_replace#(
-    parameter pocket::slot_id_t     SLOT_ID   = 0,
-    parameter pocket::bridge_data_t SLOT_SIZE = 0
+    parameter pocket::slot_id_t     SLOT_ID   = 0
 ) (
     bus_if                         bridge_dataslot_in,
     bus_if                         bridge_dataslot_out,
 
     host_dataslot_request_write_if host_dataslot_request_write,
+
+    input pocket::bridge_data_t    slot_size,
 
     output logic                   slot_base_found,
     output logic                   slot_size_zero
@@ -30,11 +31,10 @@ module bridge_dataslot_find_and_replace#(
         .slot_size_zero
     );
 
-    bridge_dataslot_size_replace#(
-        .SLOT_SIZE  (SLOT_SIZE)
-    ) replacer (
+    bridge_dataslot_size_replace replacer (
         .bridge_dataslot_in,
         .bridge_dataslot_out,
+        .slot_size,
         .slot_base_address,
         .slot_base_found
     );

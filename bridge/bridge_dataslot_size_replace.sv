@@ -1,9 +1,9 @@
 
-module bridge_dataslot_size_replace#(
-    parameter pocket::bridge_data_t SLOT_SIZE = 0
-) (
+module bridge_dataslot_size_replace (
     bus_if                       bridge_dataslot_in,
     bus_if                       bridge_dataslot_out,
+
+    input pocket::bridge_data_t  slot_size,
 
     input pocket::bridge_addr_t  slot_base_address,
     input logic                  slot_base_found
@@ -13,7 +13,7 @@ module bridge_dataslot_size_replace#(
     always_comb begin
         odd_slot                           = '0;
         odd_slot                           = bridge_dataslot_in.rd_data;
-        odd_slot.size_lower                = SLOT_SIZE;
+        odd_slot.size_lower                = slot_size;
 
         bridge_dataslot_out.addr           = bridge_dataslot_in.addr;
         bridge_dataslot_out.wr             = bridge_dataslot_in.wr;
