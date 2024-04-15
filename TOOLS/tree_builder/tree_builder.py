@@ -17,6 +17,7 @@ import os.path
 import sys
 import shutil
 import json
+import re
 
 def getInt(jsonElement):
     if isinstance(jsonElement, int):
@@ -43,8 +44,8 @@ def jsonPath(jsonDict, path, default=None):
 
     return default if current is None else current
 
-def checkInteractFile(dataFile, args):
-    print("Checking interact.json")
+def checkInteractFile(dataFile, filename, args):
+    print(f"Checking interact file '{filename}'")
 
     # ensure that ids are unique, default values for lists
     # are from the possible values, values are unique and
@@ -102,16 +103,17 @@ def checkInteractFile(dataFile, args):
             # finally check the default is a valid option
             assert defaultval in options, f"defaultval 0x{defaultval:08x} is not a valid option for element '{name}'"
 
-def checkCoreFile(dataFile, args):
-    print("Checking core.json")
+def checkCoreFile(dataFile, filename, args):
+    print(f"Checking core file '{filename}'")
 
     assert(jsonPath(dataFile, "core.metadata.shortname") == args.shortname)
     assert(jsonPath(dataFile, "core.metadata.author") == args.author)
     assert(args.platform in jsonPath(dataFile, "core.metadata.platform_ids"))
 
 CHECKS = {
-    "core.json": checkCoreFile,
-    "interact.json" : checkInteractFile
+    r'.*/core.json$': checkCoreFile,
+    r'.*/interact.json$' : checkInteractFile,
+    r'.*/Interact/.*json$' : checkInteractFile
 }
 
 def translate(x, args):
@@ -149,10 +151,10 @@ def process(entry, templatePath, targetPath, args):
             continue
 
         fullSource = os.path.join(path, file)
-        checker = CHECKS.get(file, None)
-        if checker is not None:
-            with open(fullSource) as f:
-                checker(json.load(f), args)
+        for (check, routine) in CHECKS.items():
+            if re.match(check, fullSource):
+                with open(fullSource) as f:
+                    routine(json.load(f), fullSource, args)
 
         if args.write:
             shutil.copy(fullSource, os.path.join(target, file))
