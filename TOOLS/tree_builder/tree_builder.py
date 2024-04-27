@@ -150,6 +150,8 @@ def process(entry, templatePath, targetPath, args):
         if file.startswith("."):
             continue
 
+        file_translated = translate(file,args)
+
         fullSource = os.path.join(path, file)
         for (check, routine) in CHECKS.items():
             if re.match(check, fullSource):
@@ -157,7 +159,7 @@ def process(entry, templatePath, targetPath, args):
                     routine(json.load(f), fullSource, args)
 
         if args.write:
-            shutil.copy(fullSource, os.path.join(target, file))
+            shutil.copy(fullSource, os.path.join(target, file_translated))
             log( f"Copied: '{os.path.join(path, file)}' to '{os.path.join(target, file)}'")
         else:
             log( f"Would Copy: '{os.path.join(path, file)}' to '{os.path.join(target, file)}'")
