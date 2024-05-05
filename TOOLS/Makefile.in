@@ -25,14 +25,14 @@ SRCBITFILE = src/fpga/output_files/ap_core.rbf
 TGTBITFILE = $(ROOT)/Cores/$(COREDIR)/$(RBFNAME)
 
 $(TGTBITFILE): $(SRCBITFILE)
-	$(REVERSE_BITS) $(SRCBITFILE) $(TGTBITFILE)
+	$(REVERSE_BITS) "$(SRCBITFILE)" "$(TGTBITFILE)"
 
 clean:
 	rm -rf $(ROOT)
 	rm -rf ROOT.zip
 
 treebuild:
-	$(TREE_BUILDER) --template dist --target ROOT --platform $(PLATFORM) --author $(AUTHORNAME) --shortname $(SHORTNAME) --write --delete
+	$(TREE_BUILDER) --template dist --target ROOT --platform "$(PLATFORM)" --author "$(AUTHORNAME)" --shortname "$(SHORTNAME)" --write --delete
 
 distrib: treebuild $(TGTBITFILE)
 
