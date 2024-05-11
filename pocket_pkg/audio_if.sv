@@ -87,6 +87,7 @@ endmodule
 
         if(counter[7:0] == '1) begin
             shifter    <= {1'b0, sound_total[16:1], 15'b0, 1'b0, sound_total[16:1], 15'b0};
+            shifter    <= {1'b0, sound_l, 15'b0, 1'b0, sound_r, 15'b0};
         end
     end
 

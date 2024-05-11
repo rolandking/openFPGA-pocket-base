@@ -112,7 +112,6 @@ def checkCoreFile(dataFile, filename, args):
 
 CHECKS = {
     r'.*/core.json$': checkCoreFile,
-    r'.*/interact.json$' : checkInteractFile,
     r'.*/Interact/.*json$' : checkInteractFile
 }
 
